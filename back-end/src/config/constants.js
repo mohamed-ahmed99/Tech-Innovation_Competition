@@ -8,3 +8,6 @@ export const status = {
     SUCCESS:"SUCCESS",
     FAIL:"FAIL",
 }
+
+
+

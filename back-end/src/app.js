@@ -4,6 +4,9 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 
+// routes
+import authRoutes from './routes/auth.routes.js'
+
 // 
 import { status } from './config/constants.js' 
 
@@ -49,6 +52,7 @@ app.get('/', (req, res) => {
 })
 
 // routes
+app.use('/api/auth', authRoutes)
 
 // not found routes
 app.use((req, res) => {
