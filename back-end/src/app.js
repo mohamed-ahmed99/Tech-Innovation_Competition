@@ -4,6 +4,9 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 
+// 
+import { status } from './config/constants.js' 
+
 // routes
 const app = express() 
 dotenv.config()
@@ -50,6 +53,17 @@ app.get('/', (req, res) => {
 // not found routes
 app.use((req, res) => {
     res.status(404).json({message:`Route ${req.originalUrl} not found.`})
+})
+
+// error middleware
+app.use((err, req, res, next) => {
+
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    const response = { status: status.ERROR, message, URL:req.originalUrl, data: null }
+    console.log(response)
+    res.status(statusCode).json(response);
 })
 
 
