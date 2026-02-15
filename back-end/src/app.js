@@ -3,10 +3,14 @@ import dotenv from 'dotenv'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
-import authRouter from './routes/auth.router'
 
-// routes
+import { status } from './config/constants.js' 
+
+//
+import authRoutes from './routes/auth.routes.js'
+
 const app = express()
+
 dotenv.config()
 
 // cors
@@ -39,19 +43,31 @@ const ConnectDB = async () => {
 
 }
 ConnectDB()
-//use api 
-app.use('/api/regist')
 
 // 
 app.get('/', (req, res) => {
-    res.status(200).json({ message: "hello user" })
+    res.status(200).json({ message: "hello world" })
 })
 
+
 // routes
+app.use('/api/auth', authRoutes)
+
 
 // not found routes
 app.use((req, res) => {
     res.status(404).json({ message: `Route ${req.originalUrl} not found.` })
+})
+
+// error middleware
+app.use((err, req, res, next) => {
+
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    const response = { status: status.ERROR, message, URL:req.originalUrl, data: null }
+    console.log(response)
+    res.status(statusCode).json(response);
 })
 
 

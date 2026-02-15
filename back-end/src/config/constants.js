@@ -1,1 +1,13 @@
-console.log("hello world")
+
+
+
+
+//////////// response
+export const status = {
+    ERROR:"ERROR",
+    SUCCESS:"SUCCESS",
+    FAIL:"FAIL",
+}
+
+
+
