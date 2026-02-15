@@ -3,20 +3,21 @@ import dotenv from 'dotenv'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
+import authRouter from './routes/auth.router'
 
 // routes
-const app = express() 
+const app = express()
 dotenv.config()
 
 // cors
 const allowedOrigins = process.env.ORIGINS.split(',') || []
 app.use(cors({
     origin: (origin, callBack) => {
-        if(!origin || allowedOrigins.includes(origin)) return callBack(null, true)
+        if (!origin || allowedOrigins.includes(origin)) return callBack(null, true)
         else return callBack(new Error("NOT allowed by CORS"))
     },
-    methods:["POST", "GET", "PUT", "PATCH","DELETE"],
-    credentials:true
+    methods: ["POST", "GET", "PUT", "PATCH", "DELETE"],
+    credentials: true
 }))
 
 
@@ -26,30 +27,31 @@ app.use(cookieParser())
 
 // connect with DB
 const ConnectDB = async () => {
-    try{
+    try {
         mongoose.set('strictQuery', false)
         mongoose.connect(process.env.DB_URI)
         console.log("DB done")
     }
-    catch(error){
+    catch (error) {
         console.log(error.message)
         process.exit(1)
     }
 
 }
 ConnectDB()
-
+//use api 
+app.use('/api/regist')
 
 // 
 app.get('/', (req, res) => {
-    res.status(200).json({message:"hello user"})
+    res.status(200).json({ message: "hello user" })
 })
 
 // routes
 
 // not found routes
 app.use((req, res) => {
-    res.status(404).json({message:`Route ${req.originalUrl} not found.`})
+    res.status(404).json({ message: `Route ${req.originalUrl} not found.` })
 })
 
 
