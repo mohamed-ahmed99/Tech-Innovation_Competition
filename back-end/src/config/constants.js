@@ -9,5 +9,10 @@ export const status = {
     FAIL:"FAIL",
 }
 
+export const ROLES = {
+    ADMIN: "Admin",
+    USER:"User"
+}
+
 
 
