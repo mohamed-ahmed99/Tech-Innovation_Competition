@@ -33,8 +33,9 @@ app.use(cookieParser())
 const ConnectDB = async () => {
     try {
         mongoose.set('strictQuery', false)
-        mongoose.connect(process.env.DB_URI)
+        await mongoose.connect(process.env.DB_URI)
         console.log("DB done")
+        console.log(mongoose.connection.name)
     }
     catch (error) {
         console.log(error.message)

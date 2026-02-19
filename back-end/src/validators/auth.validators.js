@@ -3,28 +3,28 @@ import { validator } from "../middlewares/requestValidator.js"
 
 
 const registerSchecma = {
-    firstName: body("personalInfo.firstName")
+    firstName: body("firstName")
         .notEmpty().withMessage("username is rquired")
         .isString().withMessage("username must be string")
         .isLength({min:2}).withMessage("username mustn't be at least 2 characters"),
 
-    lastName: body("personalInfo.lastName")
+    lastName: body("lastName")
         .notEmpty().withMessage("lastName is rquired")
         .isString().withMessage("lastName must be string")
         .isLength({min:2}).withMessage("lastName mustn't be at least 2 characters"),
 
-    phoneNumber: body("personalInfo.phoneNumber")
+    phoneNumber: body("phoneNumber")
         .notEmpty().withMessage("phoneNumber is rquired")
         .isString().withMessage("phoneNumber must be string")
         .isLength({min:10}).withMessage("phoneNumber mustn't be at least 10 characters")
         .isLength({max:15}).withMessage("phoneNumber mustn't be more than 15 characters"),
         
-    email: body("personalInfo.email")
+    email: body("email")
         .notEmpty().withMessage("email is rquired")
         .isEmail().withMessage("Invalid email")
         .isString().withMessage("email must be string"),
         
-    password: body("personalInfo.password")
+    password: body("password")
         .notEmpty().withMessage("password is rquired")
         .isString().withMessage("password must be string")
         .isStrongPassword({minLength: 8,minLowercase: 1,minUppercase:0, minNumbers: 1,minSymbols: 1})
