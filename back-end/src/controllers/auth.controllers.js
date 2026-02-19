@@ -6,6 +6,7 @@ import transporter from "../config/sendEmail.js"
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv';
 import { verifyEmailMSG } from "../utils/verifyEmail.js"
+import Sessions from "../models/sessions.model.js"
 
 dotenv.config()
 
@@ -42,7 +43,7 @@ export const signUp = asyncHandler(async (req, res) => {
 /////////////////// 
 
 // verify email
-export const VerifyEmail = async (req, res) => {
+export const VerifyEmail = asyncHandler(async (req, res) => {
     // check body
     console.log(req.body)
     const {email, code} = req.body
@@ -62,8 +63,7 @@ export const VerifyEmail = async (req, res) => {
 
 
     // create session
-    // const session = {token, ip}
-    // await Sessions.create({user:user._id, sessions:[session]})
+    await Sessions.create({user:user._id, sessions:[{token, ip}]})
 
     // update DB
     user.verifyUser = {
@@ -87,5 +87,64 @@ export const VerifyEmail = async (req, res) => {
     // response
     const userData = {...user.personalInfo, token:token}
     return res.status(200).json({message: "Verified successfully", user:userData});
-}
+})
 
+
+
+// Signin
+export const SignIn = asyncHandler(async (req, res) => {
+    // check if user in dataBase or not
+    const { email, password } = req.body
+    const user = await Users.findOne({"personalInfo.email": email}).select("+personalInfo.password")
+    if(!user) return res.status(404).json({message:"User not found. check that your email is correct or create a new account."})
+
+    // check password
+    if(! await user.checkPassword(password)){
+        return res.status(401).json({message:"The password you entered is incorrect."})
+    }
+        
+
+    // have user verified his email ?
+    if(user.verifyUser.isVerified == false) {
+        return res.status(401).json({
+            message:"Account not verified. A verification code has been sent to your email.", 
+            order:"verifyEmail"
+        })
+    }
+
+    // token and ip
+    const token = jwt.sign({_id:user._id, email:user.personalInfo.email, role:user.role}, process.env.JWT_SECRET)
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.connection.remoteAddress
+
+    // update user
+    const userSession = await Sessions.findOne({user:user._id})
+    console.log(userSession)
+    if(userSession){
+        await Sessions.updateOne({ user: user._id },
+            {
+                $push: { sessions: { token, ip } },
+            }
+        );
+
+    }else{
+        await Sessions.create({user:user._id, sessions:[{token, ip}]})
+    }
+        
+    // response
+    const userData = {...user.personalInfo, isVerified:user.verifyUser.isVerified}
+    return res.status(200).json({ message: "successful login", user:userData, token});
+        
+})
+
+
+// verify-me 
+export const VerifyMe = asyncHandler(async (req, res) => {
+    // 
+    if (!req.user?._id) return res.status(401).json({status:"fail" ,message: "Unauthorized", data:null });
+
+    const user = await Users.findById(req.user._id).select("-verifyUser")
+    if (!user) return res.status(404).json({status:"fail" , message: "User not found", data:null });
+
+
+    return res.status(200).json({ message: "User verified successfully", data:{user} });        
+})
