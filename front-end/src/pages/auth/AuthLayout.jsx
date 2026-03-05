@@ -7,7 +7,8 @@ export default function AuthLayout() {
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
             <AuthNavbar />
-            <main className="flex-1 flex items-center justify-center p-4 pt-20">
+            <main className="flex-1 flex justify-center p-4 pt-24 pb-12">
+
                 <Outlet />
             </main>
         </div>
