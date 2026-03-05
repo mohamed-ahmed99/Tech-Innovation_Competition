@@ -1,17 +1,25 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import HomePage from './pages/home/page';
+import AuthLayout from './pages/auth/AuthLayout';
+import SignUp from './pages/auth/SignUp';
+import LogIn from './pages/auth/LogIn';
 
-function App() {
-  
-  const testServer = async () => {
-    const res = await fetch("http://localhost:5000/")
-    const data  = await res.json()
-    console.log(data)
-  }
-  testServer()
-
+function App() {  
   return (
-    <>
-      <h1>hello world</h1>
-    </>
+    <Router>
+      <Routes>
+
+        {/* Home Page */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Authentication Pages */}
+        <Route element={<AuthLayout />} >
+          <Route path="/auth/login" element={<LogIn />} />
+          <Route path="/auth/sign-up" element={<SignUp />} />
+        </Route>
+
+      </Routes>
+    </Router>
   )
 }
 
