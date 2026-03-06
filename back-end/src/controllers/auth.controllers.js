@@ -35,7 +35,7 @@ export const signUp = asyncHandler(async (req, res) => {
         html:verifyEmailMSG(newUser.personalInfo.firstName, verifyCode)
     })
     // response
-    res.status(201).json({status:"success", message:"successful registration, check your email", data:null})
+    res.status(201).json({status:"success", message:"successful registration, check your email", data:{email:req.body.email}})
 })
 
 

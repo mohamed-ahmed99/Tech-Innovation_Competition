@@ -16,6 +16,11 @@ export const usePostMethod = () => {
         // check body
         if (!body) return null
 
+        // reset state for new request
+        setStatus("idle");
+        setMessage("");
+        setData(null);
+
         // get token
         const token = localStorage.getItem("myToken");
         setLoading(true); // set loading

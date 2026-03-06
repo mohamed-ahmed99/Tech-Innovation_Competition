@@ -7,9 +7,11 @@ import { Link } from 'react-router-dom';
 import { validateSignUp } from './authValidation';
 import { usePostMethod } from '../../hooks/usePostMethod';
 import { useNavigate } from 'react-router-dom';
+import Message from '../../components/Message';
 
 function SignUp() {
     const navigate = useNavigate();
+    const [showMsg, setShowMsg] = useState(false);
 
     // post data
     const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
@@ -68,17 +70,16 @@ function SignUp() {
     };
 
     useEffect(() => {
-        // check status
-        // if (status_p === "success") {
-        //     setFormData({ firstName: '', lastName: '', email: '', phoneNumber: '', password: '', address: '', gender: '' });
-        // }
+        // Trigger message when request finishes
+        if (status_p === "fail") setShowMsg(true);
 
-        // navigate to verify email
+        // Navigate to verify email if success, with a slight delay to show the message
         if (status_p === "success") {
+            sessionStorage.setItem("NeuroAi_Email_For_Verification", data_p.email);
             navigate("/auth/verify-email");
         }
-    }, [status_p]);
-    
+    }, [status_p, navigate]);
+
     // Cleanup effect for the timeout
     useEffect(() => {
         return () => {
@@ -206,6 +207,18 @@ function SignUp() {
                     <Link to="/privacy" className="underline hover:text-zinc-300"> Privacy Policy</Link>.
                 </motion.p>
             </form>
+
+
+
+            {/* show message from server response */}
+            <Message
+                isVisible={showMsg}
+                message={message_p}
+                type={status_p === 'success' ? 'success' : 'error'}
+                title={status_p === 'success' ? 'Success' : 'Request Failed'}
+                duration={5000} // disappear after 5 seconds
+                onClose={() => setShowMsg(false)}
+            />
         </motion.div>
     );
 }
