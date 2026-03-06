@@ -5,8 +5,16 @@ import List from '../../components/inputs/List';
 import Button from '../../components/btns/Button';
 import { Link } from 'react-router-dom';
 import { validateSignUp } from './authValidation';
+import { usePostMethod } from '../../hooks/usePostMethod';
+import { useNavigate } from 'react-router-dom';
 
 function SignUp() {
+    const navigate = useNavigate();
+
+    // post data
+    const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
+
+    // form data
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -17,10 +25,11 @@ function SignUp() {
         gender: ''
     });
 
-    const [errors, setErrors] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const errorTimeoutRef = useRef(null);
 
+    const [errors, setErrors] = useState({}); // errors
+    const errorTimeoutRef = useRef(null); // error timeout
+
+    // handle change
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -34,6 +43,7 @@ function SignUp() {
         }
     };
 
+    // handle submit
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -53,16 +63,22 @@ function SignUp() {
             return;
         }
 
-        setIsSubmitting(true);
-        console.log("Form Data Validated & Submitted:", formData);
-
-        // Simulate API call
-        setTimeout(() => {
-            setIsSubmitting(false);
-            // navigate to success or login
-        }, 2000);
+        // post data
+        await postData("http://localhost:5150/api/auth/signup", {}, formData);
     };
 
+    useEffect(() => {
+        // check status
+        // if (status_p === "success") {
+        //     setFormData({ firstName: '', lastName: '', email: '', phoneNumber: '', password: '', address: '', gender: '' });
+        // }
+
+        // navigate to verify email
+        if (status_p === "success") {
+            navigate("/auth/verify-email");
+        }
+    }, [status_p]);
+    
     // Cleanup effect for the timeout
     useEffect(() => {
         return () => {
@@ -94,14 +110,18 @@ function SignUp() {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="w-full max-w-3xl bg-zinc-900/50 border border-zinc-800 p-8 md:p-12 rounded-3xl shadow-2xl backdrop-blur-sm"
+            className="w-full max-w-3xl bg-[#111] border border-zinc-800 p-8 md:p-12 rounded-3xl shadow-2xl backdrop-blur-sm"
         >
+            {/* title */}
             <div className="mb-10 text-center">
                 <motion.h1 variants={itemVariants} className="text-3xl font-bold text-zinc-100 mb-2">Create an account</motion.h1>
                 <motion.p variants={itemVariants} className="text-zinc-400">Join NeuroAi and start your journey today.</motion.p>
             </div>
 
+            {/* form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+
+                {/* first name and last name */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <motion.div variants={itemVariants}>
                         <Input
@@ -119,6 +139,7 @@ function SignUp() {
                     </motion.div>
                 </div>
 
+                {/* email and phone number */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <motion.div variants={itemVariants}>
                         <Input
@@ -136,6 +157,7 @@ function SignUp() {
                     </motion.div>
                 </div>
 
+                {/* password and gender */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <motion.div variants={itemVariants}>
                         <Input
@@ -158,6 +180,7 @@ function SignUp() {
                     </motion.div>
                 </div>
 
+                {/* address */}
                 <motion.div variants={itemVariants}>
                     <Input
                         label="Address" name="address" placeholder="123 Street, City, Country" required
@@ -166,15 +189,17 @@ function SignUp() {
                     />
                 </motion.div>
 
+                {/* sign up button */}
                 <motion.div variants={itemVariants}>
                     <Button
                         type="submit" variant="primary" size="vmd" width="full" className="mt-4"
-                        isLoading={isSubmitting}
+                        isLoading={loading_p}
                     >
                         Sign Up
                     </Button>
                 </motion.div>
 
+                {/* terms and privacy policy */}
                 <motion.p variants={itemVariants} className="text-center text-sm text-zinc-500 mt-6">
                     By signing up, you agree to our
                     <Link to="/terms" className="underline hover:text-zinc-300"> Terms of Service</Link> and

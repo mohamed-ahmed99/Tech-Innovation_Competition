@@ -35,9 +35,8 @@ export const validateSignUp = (data) => {
     } else {
         // Optional: Check for complexity
         const hasNumber = /\d/.test(data.password);
-        const hasUpper = /[A-Z]/.test(data.password);
-        if (!hasNumber || !hasUpper) {
-            errors.password = "Password should contain at least one number and one uppercase letter";
+        if (!hasNumber) {
+            errors.password = "Password should contain at least one number";
         }
     }
 
