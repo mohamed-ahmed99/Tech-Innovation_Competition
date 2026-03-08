@@ -51,7 +51,12 @@ export const VerifyEmail = asyncHandler(async (req, res) => {
 
     // check if user in dataBase or varification time expired or not
     const user = await Users.findOne({"personalInfo.email": email})
-    if(!user) return res.status(404).json({status:"fail", message:"User not found. Please check your email or create a new account."})
+    if(!user) return res.status(404).json({status:"fail", message:"User not found"})
+
+    // check if user already verified
+    if(user.isVerified) {
+        return res.status(400).json({status:"fail", message:"User already verified", data:null})
+    }
 
     // check code
     if(code != user.verifyUser.verifyCode) return res.status(401).json({status:"fail", message:"Incorrect verification code", data:null})
@@ -70,7 +75,7 @@ export const VerifyEmail = asyncHandler(async (req, res) => {
         verifyCode:null,
         emailVerificationExpires: null,
     }
-    user.personalInfo.isVerified =  true,
+    user.isVerified =  true,
     await user.save()
     
 
@@ -85,8 +90,7 @@ export const VerifyEmail = asyncHandler(async (req, res) => {
     // })
     
     // response
-    const userData = {...user.personalInfo, token:token}
-    return res.status(200).json({message: "Verified successfully", user:userData});
+    return res.status(200).json({status:"success", message: "Verified successfully", data:{token}});
 })
 
 

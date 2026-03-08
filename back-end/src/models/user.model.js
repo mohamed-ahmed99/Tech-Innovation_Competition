@@ -13,17 +13,17 @@ const userSchema = new mongoose.Schema({
         password:{type:String, required:true, select:false},
         address:String,
         gender:{type:String, required:true},
-        isVerified: {type:Boolean, default:false},
     },
-
+    
     // roles
     role:{
         type:String,
         enum: [ROLES.ADMIN, ROLES.USER],
         default: ROLES.USER
     },
-
-
+    
+    isVerified: {type:Boolean, default:false},
+    
 
     // verify email 
     verifyUser:{

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Input from '../../components/inputs/Input';
 import List from '../../components/inputs/List';
@@ -12,6 +12,7 @@ import Message from '../../components/Message';
 function SignUp() {
     const navigate = useNavigate();
     const [showMsg, setShowMsg] = useState(false);
+    const handleCloseMsg = useCallback(() => setShowMsg(false), []);
 
     // post data
     const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
@@ -217,7 +218,7 @@ function SignUp() {
                 type={status_p === 'success' ? 'success' : 'error'}
                 title={status_p === 'success' ? 'Success' : 'Request Failed'}
                 duration={5000} // disappear after 5 seconds
-                onClose={() => setShowMsg(false)}
+                onClose={handleCloseMsg}
             />
         </motion.div>
     );
