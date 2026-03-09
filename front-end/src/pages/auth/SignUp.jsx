@@ -10,6 +10,9 @@ import { useNavigate } from 'react-router-dom';
 import Message from '../../components/Message';
 
 function SignUp() {
+    window.scrollTo(0, 0);
+
+    // navigate
     const navigate = useNavigate();
     const [showMsg, setShowMsg] = useState(false);
     const handleCloseMsg = useCallback(() => setShowMsg(false), []);

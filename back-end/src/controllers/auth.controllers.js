@@ -14,8 +14,8 @@ dotenv.config()
 ////////  signUp
 export const signUp = asyncHandler(async (req, res) => {
     // check if user has an acound or not 
-    const user = await Users.findOne({"personalInfo.email":req.body.email})
-    if(user) return res.status(400).json({message:"This email connected with another account", order:"login"})
+    const user = await Users.findOne({ "personalInfo.email": req.body.email })
+    if (user) return res.status(400).json({ message: "This email connected with another account", order: "login" })
 
     // hash password, create verification code & create user
     req.body.password = await bcrypt.hash(req.body.password, 10)
@@ -23,19 +23,19 @@ export const signUp = asyncHandler(async (req, res) => {
 
 
     const newUser = await Users.create({
-        personalInfo:req.body,
-        verifyUser: {verifyCode}
+        personalInfo: req.body,
+        verifyUser: { verifyCode }
     })
 
     // send code to user
     await transporter.sendMail({
-        from:process.env.EMAIL_FROM,
-        to:req.body.email,
-        subject:"Verify Your Account",
-        html:verifyEmailMSG(newUser.personalInfo.firstName, verifyCode)
+        from: process.env.EMAIL_FROM,
+        to: req.body.email,
+        subject: "Verify Your Account",
+        html: verifyEmailMSG(newUser.personalInfo.firstName, verifyCode)
     })
     // response
-    res.status(201).json({status:"success", message:"successful registration, check your email", data:{email:req.body.email}})
+    res.status(201).json({ status: "success", message: "successful registration, check your email", data: { email: req.body.email } })
 })
 
 
@@ -46,38 +46,38 @@ export const signUp = asyncHandler(async (req, res) => {
 export const VerifyEmail = asyncHandler(async (req, res) => {
     // check body
     console.log(req.body)
-    const {email, code} = req.body
-    if(!email || !code) return res.status(400).json({status:"fail",message:"email and code are required", data:null})
+    const { email, code } = req.body
+    if (!email || !code) return res.status(400).json({ status: "fail", message: "email and code are required", data: null })
 
     // check if user in dataBase or varification time expired or not
-    const user = await Users.findOne({"personalInfo.email": email})
-    if(!user) return res.status(404).json({status:"fail", message:"User not found"})
+    const user = await Users.findOne({ "personalInfo.email": email })
+    if (!user) return res.status(404).json({ status: "fail", message: "User not found" })
 
     // check if user already verified
-    if(user.isVerified) {
-        return res.status(400).json({status:"fail", message:"User already verified", data:null})
+    if (user.isVerified) {
+        return res.status(400).json({ status: "fail", message: "User already verified", data: null })
     }
 
     // check code
-    if(code != user.verifyUser.verifyCode) return res.status(401).json({status:"fail", message:"Incorrect verification code", data:null})
-        
+    if (code != user.verifyUser.verifyCode) return res.status(401).json({ status: "fail", message: "Incorrect verification code", data: null })
+
     // token and ip
-    const token = jwt.sign({_id:user._id, email:user.personalInfo.email, role:user.role}, process.env.JWT_SECRET)
+    const token = jwt.sign({ _id: user._id, email: user.personalInfo.email, role: user.role }, process.env.JWT_SECRET)
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.connection.remoteAddress
-     
+
 
 
     // create session
-    await Sessions.create({user:user._id, sessions:[{token, ip}]})
+    await Sessions.create({ user: user._id, sessions: [{ token, ip }] })
 
     // update DB
     user.verifyUser = {
-        verifyCode:null,
+        verifyCode: null,
         emailVerificationExpires: null,
     }
-    user.isVerified =  true,
-    await user.save()
-    
+    user.isVerified = true,
+        await user.save()
+
 
 
     // cookies doesn't work on Vercel deployment
@@ -88,9 +88,9 @@ export const VerifyEmail = asyncHandler(async (req, res) => {
     //     path:"/",
     //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     // })
-    
+
     // response
-    return res.status(200).json({status:"success", message: "Verified successfully", data:{token}});
+    return res.status(200).json({ status: "success", message: "Verified successfully", data: { token } });
 })
 
 
@@ -99,56 +99,55 @@ export const VerifyEmail = asyncHandler(async (req, res) => {
 export const SignIn = asyncHandler(async (req, res) => {
     // check if user in dataBase or not
     const { email, password } = req.body
-    const user = await Users.findOne({"personalInfo.email": email}).select("+personalInfo.password")
-    if(!user) return res.status(404).json({message:"User not found. check that your email is correct or create a new account."})
+    const user = await Users.findOne({ "personalInfo.email": email }).select("+personalInfo.password")
+    if (!user) return res.status(404).json({ message: "User not found. check that your email is correct or create a new account." })
 
     // check password
-    if(! await user.checkPassword(password)){
-        return res.status(401).json({message:"The password you entered is incorrect."})
+    if (! await user.checkPassword(password)) {
+        return res.status(401).json({ message: "The password you entered is incorrect." })
     }
-        
+
 
     // have user verified his email ?
-    if(user.verifyUser.isVerified == false) {
+    if (user.verifyUser.isVerified == false) {
         return res.status(401).json({
-            message:"Account not verified. A verification code has been sent to your email.", 
-            order:"verifyEmail"
+            message: "Account not verified. A verification code has been sent to your email.",
+            order: "verifyEmail"
         })
     }
 
     // token and ip
-    const token = jwt.sign({_id:user._id, email:user.personalInfo.email, role:user.role}, process.env.JWT_SECRET)
+    const token = jwt.sign({ _id: user._id, email: user.personalInfo.email, role: user.role }, process.env.JWT_SECRET)
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.connection.remoteAddress
 
     // update user
-    const userSession = await Sessions.findOne({user:user._id})
+    const userSession = await Sessions.findOne({ user: user._id })
     console.log(userSession)
-    if(userSession){
+    if (userSession) {
         await Sessions.updateOne({ user: user._id },
             {
                 $push: { sessions: { token, ip } },
             }
         );
-
-    }else{
-        await Sessions.create({user:user._id, sessions:[{token, ip}]})
+    } else {
+        await Sessions.create({ user: user._id, sessions: [{ token, ip }] })
     }
-        
+
     // response
-    const userData = {...user.personalInfo, isVerified:user.verifyUser.isVerified}
-    return res.status(200).json({ message: "successful login", user:userData, token});
-        
+    const userData = { ...user.personalInfo, isVerified: user.verifyUser.isVerified }
+    return res.status(200).json({ status: "success", message: "successful login", data: {token } });
+
 })
 
 
 // verify-me 
 export const VerifyMe = asyncHandler(async (req, res) => {
     // 
-    if (!req.user?._id) return res.status(401).json({status:"fail" ,message: "Unauthorized", data:null });
+    if (!req.user?._id) return res.status(401).json({ status: "fail", message: "Unauthorized", data: null });
 
     const user = await Users.findById(req.user._id).select("-verifyUser")
-    if (!user) return res.status(404).json({status:"fail" , message: "User not found", data:null });
+    if (!user) return res.status(404).json({ status: "fail", message: "User not found", data: null });
 
 
-    return res.status(200).json({ message: "User verified successfully", data:{user} });        
+    return res.status(200).json({ message: "User verified successfully", data: { user } });
 })

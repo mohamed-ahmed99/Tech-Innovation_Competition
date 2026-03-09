@@ -7,6 +7,9 @@ import Button from '../../components/btns/Button';
 import Message from '../../components/Message';
 
 export default function VerifyEmail() {
+
+    useEffect(() => window.scrollTo(0, 0), []);
+
     const navigate = useNavigate();
     const { postData, status_p, message_p, loading_p, data_p } = usePostMethod();
 
@@ -20,7 +23,7 @@ export default function VerifyEmail() {
         // Checking both storage types just in case
         const storedEmail = sessionStorage.getItem("NeuroAi_Email_For_Verification");
         if (!storedEmail) {
-            // navigate('/auth/login');
+            navigate('/auth/login');
         } else {
             setEmail(storedEmail);
         }
