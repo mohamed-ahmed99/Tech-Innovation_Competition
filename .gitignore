@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+venv/
+env/
+
+# IDEs
+.idea/
+.vscode/
+
+# Datasets and large files
+archive(1)/
+archive (1)/
+archive (1).zip
+my_dataset/
+*.nifti
+*.dcm
+
+# Checkpoints and models
+checkpoints/
+*.pth
+*.pt
+*.safetensors
+
+# OS files
+.DS_Store
+Thumbs.db
