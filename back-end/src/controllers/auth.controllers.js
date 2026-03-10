@@ -90,7 +90,8 @@ export const VerifyEmail = asyncHandler(async (req, res) => {
     // })
 
     // response
-    return res.status(200).json({ status: "success", message: "Verified successfully", data: { token } });
+    const userData = { ...user.personalInfo, isVerified: user.isVerified }
+    return res.status(200).json({ status: "success", message: "Verified successfully", data: { token, user: userData } });
 })
 
 
@@ -135,7 +136,7 @@ export const SignIn = asyncHandler(async (req, res) => {
 
     // response
     const userData = { ...user.personalInfo, isVerified: user.verifyUser.isVerified }
-    return res.status(200).json({ status: "success", message: "successful login", data: {token } });
+    return res.status(200).json({ status: "success", message: "successful login", data: { token, user: userData } });
 
 })
 
@@ -149,5 +150,5 @@ export const VerifyMe = asyncHandler(async (req, res) => {
     if (!user) return res.status(404).json({ status: "fail", message: "User not found", data: null });
 
 
-    return res.status(200).json({ message: "User verified successfully", data: { user } });
+    return res.status(200).json({ status: "success", message: "User verified successfully", data: { user } });
 })

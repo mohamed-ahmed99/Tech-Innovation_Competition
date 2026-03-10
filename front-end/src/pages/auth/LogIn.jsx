@@ -5,6 +5,7 @@ import Input from '../../components/inputs/Input';
 import Button from '../../components/btns/Button';
 import Message from '../../components/Message';
 import { usePostMethod } from '../../hooks/usePostMethod';
+import { useGlobalData } from '../../hooks/useGlobalData';
 import { validateLogin } from './authValidation';
 
 function LogIn() {
@@ -14,6 +15,7 @@ function LogIn() {
 
     // post data hook
     const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
+    const [store, setGlobalData] = useGlobalData();
 
     // form data state
     const [formData, setFormData] = useState({
@@ -78,6 +80,7 @@ function LogIn() {
         // Handle success: store token and user info, then navigate
         if (status_p === "success" && data_p) {
             localStorage.setItem("NeuroAi_Token", data_p.token)
+            setGlobalData("user", data_p.user);
 
             // Redirect to home after showing the message
             const timer = setTimeout(() => {

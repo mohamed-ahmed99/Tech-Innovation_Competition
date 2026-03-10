@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Mail, ArrowLeft, RefreshCcw } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usePostMethod } from '../../hooks/usePostMethod';
+import { useGlobalData } from '../../hooks/useGlobalData';
 import Button from '../../components/btns/Button';
 import Message from '../../components/Message';
 
@@ -12,6 +13,7 @@ export default function VerifyEmail() {
 
     const navigate = useNavigate();
     const { postData, status_p, message_p, loading_p, data_p } = usePostMethod();
+    const [store, setGlobalData] = useGlobalData();
 
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -94,6 +96,7 @@ export default function VerifyEmail() {
         if (status_p === "success") {
             setShowMsg(true);
             localStorage.setItem("NeuroAi_Token", data_p?.token);
+            setGlobalData("user", data_p?.user);
             navigate("/");
         }
     }, [status_p, navigate, data_p]);
