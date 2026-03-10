@@ -1,0 +1,25 @@
+# Core deep learning
+torch>=2.1.0
+torchvision>=0.16.0
+
+# Image processing
+opencv-python>=4.8.0
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# Medical imaging (NIfTI / DICOM)
+nibabel>=5.0.0      # NIfTI support (.nii.gz) — BraTS, etc.
+pydicom>=2.4.0      # DICOM support (.dcm)
+
+# ML utilities
+scikit-learn>=1.3.0
+
+# API layer
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6    # required for FastAPI file uploads
+pydantic>=2.0.0
+
+# Optional — experiment tracking (comment out if not needed)
+# wandb>=0.16.0
+# tensorboard>=2.14.0
