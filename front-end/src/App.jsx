@@ -21,7 +21,9 @@ function App() {
     const token = localStorage.getItem("NeuroAi_Token");
     const verifyUser = async () => {
       if (token) {
-        await getData("http://localhost:5150/api/auth/verify-me");
+        // http://localhost:5150/api/auth/verify-me
+        // https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me
+        await getData("https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me");
       } else {
         setGlobalData("user", null);
       }
@@ -59,6 +61,7 @@ function App() {
         {/* Main pages */}
         <Route element={<MainLayout />} >
           <Route path="/" element={<HomePage />} />
+          <Route path="/about-us" element={<div>About Us</div>} />
         </Route>
 
       </Routes>

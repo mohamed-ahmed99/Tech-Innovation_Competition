@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, LogIn, Info, Menu, X } from 'lucide-react';
+import { LogOut, LogIn, Info, Menu, X, PanelLeft } from 'lucide-react';
 import { useGlobalData } from '../hooks/useGlobalData';
 import MobileMenu from './MobileMenu';
 
-export default function Navbar({ isUserAuthenticated }) {
+export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
     const navigate = useNavigate();
     const [, setGlobalData] = useGlobalData();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,20 +21,32 @@ export default function Navbar({ isUserAuthenticated }) {
 
     return (
         <nav className="w-full h-[70px] px-6 md:px-12 flex items-center justify-between bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 sticky top-0 z-50">
-            {/* Left side: Logo */}
-            <Link to="/" className="flex items-center gap-2.5 group z-50">
-                <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-10 h-10 bg-gradient-to-br from-zinc-100 to-zinc-300 rounded-xl flex items-center justify-center shadow-lg shadow-white/5"
-                >
-                    <span className="text-zinc-950 font-black text-xl">N</span>
-                </motion.div>
-                <div className="flex flex-col">
-                    <span className="text-lg font-bold tracking-tight text-zinc-100 leading-tight">NeuroAi</span>
-                    <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest text-zinc-500">Innovation</span>
-                </div>
-            </Link>
+            {/* Left side: Logo & Sidebar toggle on mobile */}
+            <div className="flex items-center gap-3">
+                {isUserAuthenticated && (
+                    <button
+                        onClick={onToggleSidebar}
+                        className="sm:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 rounded-xl transition-all"
+                        aria-label="Toggle Sidebar"
+                    >
+                        <PanelLeft size={22} />
+                    </button>
+                )}
+
+                <Link to="/" className="flex items-center gap-2.5 group">
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-10 h-10 bg-gradient-to-br from-zinc-100 to-zinc-300 rounded-xl flex items-center justify-center shadow-lg shadow-white/5"
+                    >
+                        <span className="text-zinc-950 font-black text-xl">N</span>
+                    </motion.div>
+                    <div className="flex flex-col">
+                        <span className="text-lg font-bold tracking-tight text-zinc-100 leading-tight">NeuroAi</span>
+                        <span className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest text-zinc-500">Innovation</span>
+                    </div>
+                </Link>
+            </div>
 
             {/* Desktop: Right side */}
             <div className="flex items-center gap-6 md:gap-8">
