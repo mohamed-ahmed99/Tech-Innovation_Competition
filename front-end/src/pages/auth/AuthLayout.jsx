@@ -1,12 +1,9 @@
-
-import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import AuthNavbar from './AuthNavbar';
 import { useGlobalData } from '../../hooks/useGlobalData';
 
 export default function AuthLayout() {
-    const [store] = useGlobalData();
-    const user = store?.user;
+    const [user] = useGlobalData('user');
 
     // If user is already logged in, redirect them away from auth pages
     if (user) {

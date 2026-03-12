@@ -8,17 +8,22 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import { useGlobalData } from './hooks/useGlobalData';
 import { useGetMethod } from './hooks/useGetMethod';
 import Loading from './components/Loading';
+
+
+
+
 function App() {
-  const { getData, data_g, status_g, error_g, isLoading_g } = useGetMethod();
+  const { getData, data_g, status_g, loading_g } = useGetMethod();
   const [store, setGlobalData] = useGlobalData();
 
-
-
-
-
   useEffect(() => {
+    const token = localStorage.getItem("NeuroAi_Token");
     const verifyUser = async () => {
-      await getData("http://localhost:5150/api/auth/verify-me");
+      if (token) {
+        await getData("http://localhost:5150/api/auth/verify-me");
+      } else {
+        setGlobalData("user", null);
+      }
     }
     verifyUser();
   }, []);
@@ -26,14 +31,16 @@ function App() {
   useEffect(() => {
     if (status_g === "success") {
       setGlobalData("user", data_g?.user);
-
     } else if (status_g === "fail") {
       setGlobalData("user", null);
-
     }
   }, [data_g, status_g, setGlobalData]);
 
-  if (isLoading_g) {
+  // Use status_g and store.user to check if initial verification is truly done
+  // We wait until status is not idle AND the store has been updated (not undefined)
+  const isUserDetermined = store.hasOwnProperty('user');
+
+  if (loading_g || !isUserDetermined) {
     return <Loading />;
   }
 

@@ -15,7 +15,13 @@ export const checkUser = (allowedRoles = []) => asyncHandler(async(req, res, nex
     if (!token)
         return res.status(401).json({ status:"fail" ,message: "Invalid authorization format" })
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) // check token
+    let decoded
+    try{
+        decoded = jwt.verify(token, process.env.JWT_SECRET) // check token
+    }
+    catch(error){
+        return res.status(401).json({ status:"fail" ,message: error.message })
+    }
 
     if(allowedRoles.length > 0 && !(allowedRoles.includes(decoded.role))){
         return res.status(403).json({status:"fail" ,message: "Forbidden" })
