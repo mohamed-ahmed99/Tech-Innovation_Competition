@@ -74,5 +74,6 @@ app.use((err, req, res, next) => {
 
 
 const Port = process.env.PORT || 5000
-app.listen(Port, () => console.log(`Server running on port ${Port}...`))
+// app.listen(Port, () => console.log(`Server running on port ${Port}...`))
 
+export default app
