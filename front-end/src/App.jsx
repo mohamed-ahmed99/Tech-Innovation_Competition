@@ -8,6 +8,7 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import { useGlobalData } from './hooks/useGlobalData';
 import { useGetMethod } from './hooks/useGetMethod';
 import Loading from './components/Loading';
+import MainLayout from './components/MainLayout';
 
 
 
@@ -48,14 +49,16 @@ function App() {
     <Router>
       <Routes>
 
-        {/* Home Page */}
-        <Route path="/" element={<HomePage />} />
-
         {/* Authentication Pages */}
         <Route element={<AuthLayout />} >
           <Route path="/auth/sign-up" element={<SignUp />} />
           <Route path="/auth/login" element={<LogIn />} />
           <Route path="/auth/verify-email" element={<VerifyEmail />} />
+        </Route>
+
+        {/* Main pages */}
+        <Route element={<MainLayout />} >
+          <Route path="/" element={<HomePage />} />
         </Route>
 
       </Routes>
