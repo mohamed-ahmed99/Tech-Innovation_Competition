@@ -9,6 +9,7 @@ import { useGlobalData } from './hooks/useGlobalData';
 import { useGetMethod } from './hooks/useGetMethod';
 import Loading from './components/Loading';
 import MainLayout from './components/MainLayout';
+import AboutPage from './pages/about/page';
 
 
 
@@ -61,7 +62,7 @@ function App() {
         {/* Main pages */}
         <Route element={<MainLayout />} >
           <Route path="/" element={<HomePage />} />
-          <Route path="/about-us" element={<div>About Us</div>} />
+          <Route path="/about-us" element={<AboutPage />} />
         </Route>
 
       </Routes>

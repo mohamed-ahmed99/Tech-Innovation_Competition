@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LogOut, LogIn, Info, Menu, X, PanelLeft } from 'lucide-react';
 import { useGlobalData } from '../hooks/useGlobalData';
 import MobileMenu from './MobileMenu';
 
+
 export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const [user, setUser] = useState(null);
     const [, setGlobalData] = useGlobalData();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -23,7 +27,7 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
         <nav className="w-full h-[70px] px-6 md:px-12 flex items-center justify-between bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 sticky top-0 z-50">
             {/* Left side: Logo & Sidebar toggle on mobile */}
             <div className="flex items-center gap-3">
-                {isUserAuthenticated && (
+                {isUserAuthenticated && location.pathname != "/about-us" ? (
                     <button
                         onClick={onToggleSidebar}
                         className="sm:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 rounded-xl transition-all"
@@ -31,7 +35,7 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
                     >
                         <PanelLeft size={22} />
                     </button>
-                )}
+                ) : null}
 
                 <Link to="/" className="flex items-center gap-2.5 group">
                     <motion.div
