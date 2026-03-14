@@ -73,13 +73,10 @@ app.use((err, req, res, next) => {
 })
 
 
-
 const Port = process.env.PORT || 5000;
 
-// for local development
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(Port, () => console.log(`Development server running on port ${Port}...`));
-}
+// Always start the server (works for both Digital Ocean and local dev)
+app.listen(Port, () => console.log(`Server running on port ${Port}...`));
 
-// for Vercel deployment
+// Also export for Vercel serverless deployment
 export default app;
