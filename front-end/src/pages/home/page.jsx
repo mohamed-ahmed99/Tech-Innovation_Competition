@@ -5,6 +5,8 @@ import ImagePreview from './ImagePreview';
 import AnalysisResult from './AnalysisResult';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { sendImageToAI } from './aiService';
+
 const HomePage = () => {
     const [store, setGlobalData] = useGlobalData();
     
@@ -41,38 +43,13 @@ const HomePage = () => {
         setIsAnalyzing(true);
         
         try {
-            // Frontend simulation:
-            // const formData = new FormData();
-            // formData.append("image", selectedFile);
-            // const response = await fetch("YOUR_BACKEND_ENDPOINT/analyze", { method: "POST", body: formData });
-            // const data = await response.json();
-            
-            // Simulating API delay
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Simulating AI response matching ChatGPT style
-            const simulatedResponse = `I've analyzed your image carefully. Here are the main details and observations I could detect:
-
-🔍 Overview: 
-The image contains several distinct elements that blend well together in terms of colors and contrast. The resolution indicates that the lighting was very well balanced.
-
-🎨 Colors & Details:
-• The use of consistent color tones is pleasing to the eye.
-• The primary focus in the center is very clear and draws attention.
-• There is no significant noise, reflecting high source quality.
-
-💡 Technical Conclusion:
-This is an excellent image that can be used as a prime example for pattern recognition.
-
----
-
-[ Note 👨‍💻 ] : This text is purely a simulated AI response to demonstrate the typing effect used by ChatGPT. To integrate the real AI, map the \`handleAnalyze\` function to the actual backend endpoint, and any output returned will be typed out here seamlessly!`;
-            
-            setAnalysisResult(simulatedResponse);
+            // Send the image and its generated source URL via the external service
+            const resultMsg = await sendImageToAI(selectedFile, previewUrl);
+            setAnalysisResult(resultMsg);
             
         } catch (error) {
             console.error("Error analyzing image:", error);
-            setAnalysisResult("Sorry, an error occurred while analyzing the image. Please try again later.");
+            setAnalysisResult("Sorry, an error occurred while connecting to the server. Please check your backend is running.");
         } finally {
             setIsAnalyzing(false);
         }
@@ -91,14 +68,11 @@ This is an excellent image that can be used as a prime example for pattern recog
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-3xl w-full text-center mb-8 relative z-10"
             >
-                <div className="inline-block mb-3 px-3 py-1 rounded-full bg-zinc-900 text-zinc-300 font-semibold text-xs tracking-widest uppercase border border-zinc-800">
-                    AI Visual Core
-                </div>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-zinc-100 mb-4 tracking-tight leading-tight">
-                    Image Analysis AI
+                    NeuroAI
                 </h1>
                 <p className="text-sm sm:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
-                    Upload any image and the AI engine will describe its contents, interpret the objects, and extract key details with high precision.
+                    Upload your image here, and the NeuroAI model will analyze it and provide you with the result.
                 </p>
             </motion.div>
 

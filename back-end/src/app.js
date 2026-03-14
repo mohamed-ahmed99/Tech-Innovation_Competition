@@ -8,6 +8,7 @@ import { status } from './config/constants.js'
 
 //
 import authRoutes from './routes/auth.routes.js'
+import aiRoutes from './routes/ai.routes.js'
 
 const app = express()
 
@@ -53,7 +54,7 @@ app.get('/', (req, res) => {
 
 // routes
 app.use('/api/auth', authRoutes)
-
+app.use('/api/ai', aiRoutes)
 
 // not found routes
 app.use((req, res) => {
@@ -74,6 +75,6 @@ app.use((err, req, res, next) => {
 
 
 const Port = process.env.PORT || 5000
-// app.listen(Port, () => console.log(`Server running on port ${Port}...`))
+app.listen(Port, () => console.log(`Server running on port ${Port}...`))
 
-export default app
+// export default app
