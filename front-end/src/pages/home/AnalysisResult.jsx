@@ -42,6 +42,24 @@ const AnalysisResult = ({ result, structured, onReset }) => {
         structured?.tumor_detected ?? structured?.tumorDetected ?? null;
 
     const location = structured?.location || structured?.bodyRegion || structured?.body_region || 'brain';
+    const detectedOrgan =
+        structured?.detected_organ ||
+        structured?.detectedOrgan ||
+        structured?.body_region ||
+        structured?.bodyRegion ||
+        'brain';
+
+    const organConfidence =
+        typeof structured?.organ_detection_confidence === 'number'
+            ? `${(structured.organ_detection_confidence * 100).toFixed(1)}%`
+            : typeof structured?.organDetectionConfidence === 'number'
+                ? `${(structured.organDetectionConfidence * 100).toFixed(1)}%`
+                : 'Not available';
+
+    const organWarning =
+        structured?.organ_detection_warning ||
+        structured?.organDetectionWarning ||
+        '';
 
     const findings = structured?.advice?.findings ||
         (tumorDetected === null
@@ -126,6 +144,8 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
                             <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Confidence</p>
                             <p className="text-sm text-zinc-100 font-semibold">{confidenceValue}</p>
+                            <p className="text-xs text-zinc-400 mt-2">Detected organ: {detectedOrgan}</p>
+                            <p className="text-xs text-zinc-500 mt-1">Organ routing confidence: {organConfidence}</p>
                             <div className={`inline-flex items-center mt-3 px-2.5 py-1 text-xs border rounded-full ${urgencyClass}`}>
                                 Urgency: {urgencyLevel}
                             </div>
@@ -164,6 +184,10 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                             {isTyping && <span className="inline-block w-1.5 sm:w-2 h-4 sm:h-5 ml-1 bg-zinc-300 animate-pulse align-middle rounded-sm"></span>}
                         </p>
                     </div>
+
+                    {organWarning && (
+                        <p className="mt-4 text-xs text-amber-400 leading-relaxed">Routing note: {organWarning}</p>
+                    )}
 
                     <p className="mt-4 text-xs text-zinc-500 leading-relaxed">{disclaimer}</p>
                 </div>

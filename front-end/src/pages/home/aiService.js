@@ -39,10 +39,13 @@ function authHeaders() {
  * Send an image to the AI model for analysis.
  * Returns { analysis: string, structured: object }
  */
-export const sendImageToAI = async (imageFile, modality = "mri") => {
+export const sendImageToAI = async (imageFile, modality = "mri", organHint = "") => {
     const formData = new FormData();
     formData.append("image", imageFile);
     formData.append("modality", modality);
+    if (organHint) {
+        formData.append("organ_hint", organHint);
+    }
 
     let response;
     try {

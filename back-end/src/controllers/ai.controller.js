@@ -9,11 +9,12 @@ function buildAdvice(result, modality = 'mri') {
     const detected = Boolean(result?.tumor_detected ?? result?.tumorDetected);
     const confidence = Number(result?.confidence || 0);
     const location = result?.location || 'undetermined region';
+    const organ = result?.detected_organ || result?.body_region || result?.bodyRegion || 'brain';
     const urgencyLevel = result?.urgency_level || 'routine';
 
     const findings = detected
-        ? `Potential tumor-like finding detected in ${location} (${modality.toUpperCase()} scan).`
-        : `No tumor-like finding detected on this ${modality.toUpperCase()} scan by the current model.`;
+        ? `Potential tumor-like finding detected in ${organ} (${location}, ${modality.toUpperCase()} scan).`
+        : `No tumor-like finding detected in ${organ} on this ${modality.toUpperCase()} scan by the current model.`;
 
     const nextSteps = Array.isArray(result?.next_steps) && result.next_steps.length > 0
         ? result.next_steps
@@ -137,6 +138,9 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
 
     form.append('file', fileBlob, req.file.originalname || 'scan.png');
     form.append('modality', modality);
+    if (req.body.organ_hint || req.body.organHint) {
+        form.append('organ_hint', req.body.organ_hint || req.body.organHint);
+    }
     form.append('threshold', req.body.threshold || '0.50');
     form.append('return_heatmap', 'false');
 
@@ -166,9 +170,10 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
 
         // Save to history if user is authenticated
         if (req.user && req.user._id) {
+            const detectedOrgan = aiResult.detected_organ || aiResult.body_region || 'brain';
             const title = aiResult.tumor_detected
-                ? `⚠️ Tumor detected — ${aiResult.location}`
-                : '✅ No tumor detected';
+                ? `⚠️ Tumor detected — ${detectedOrgan}`
+                : `✅ No tumor detected — ${detectedOrgan}`;
 
             await Analysis.create({
                 userId:          req.user._id,
@@ -184,7 +189,11 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
                 nextSteps:       aiResult.next_steps || advice.recommendedNextSteps,
                 redFlags:        aiResult.red_flags || advice.urgentCareFlags,
                 disclaimer:      aiResult.disclaimer || advice.disclaimer,
-                bodyRegion:      aiResult.body_region || 'brain',
+                bodyRegion:      aiResult.body_region || detectedOrgan,
+                detectedOrgan,
+                organDetectionConfidence: aiResult.organ_detection_confidence || 0,
+                organDetectionSource: aiResult.organ_detection_source || 'unknown',
+                organDetectionWarning: aiResult.organ_detection_warning || '',
             });
         }
 
@@ -214,7 +223,7 @@ export const getHistory = asyncHandler(async (req, res) => {
     const analyses = await Analysis.find({ userId: req.user._id })
         .sort({ createdAt: -1 })
         .limit(50)
-        .select('title tumorDetected confidence location modality formattedReport urgencyLevel nextSteps redFlags disclaimer bodyRegion createdAt');
+        .select('title tumorDetected confidence location modality formattedReport urgencyLevel nextSteps redFlags disclaimer bodyRegion detectedOrgan organDetectionConfidence organDetectionSource organDetectionWarning createdAt');
 
     return res.status(200).json({
         status: status.SUCCESS,

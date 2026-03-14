@@ -13,7 +13,7 @@ import io
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import torch
 from PIL import Image, UnidentifiedImageError
@@ -24,36 +24,44 @@ from pydantic import BaseModel, Field
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 from inference import load_model, predict
+from model_registry import checkpoint_env_map, get_available_tumor_organs, get_tumor_checkpoint_for_organ, normalize_organ_name
+from organ_router import OrganRouter
 
 log    = logging.getLogger(__name__)
 router = APIRouter(tags=["Tumor Detection"])
 
-_model:  Optional[torch.nn.Module] = None
-_device: Optional[torch.device]    = None
+_models: Dict[str, torch.nn.Module] = {}
+_device: Optional[torch.device] = None
+_organ_router = OrganRouter()
 
 SUPPORTED_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 
 
-def _get_model() -> torch.nn.Module:
-    """Lazy-load the model on first request."""
-    global _model, _device
+def _get_model(organ: str = "brain") -> torch.nn.Module:
+    """Lazy-load one tumor model per organ."""
+    global _models, _device
 
-    if _model is not None:
-        return _model
+    organ = normalize_organ_name(organ) or "brain"
 
-    checkpoint = os.environ.get("TUMOR_CHECKPOINT")
+    if organ in _models:
+        return _models[organ]
+
+    checkpoint = get_tumor_checkpoint_for_organ(organ)
     if not checkpoint:
+        required_env = checkpoint_env_map().get(organ, f"checkpoint for {organ}")
         raise RuntimeError(
-            "TUMOR_CHECKPOINT environment variable not set. "
-            "Point it to your best_model.pth file."
+            f"Tumor checkpoint for organ '{organ}' is not configured. "
+            f"Set {required_env}."
         )
 
-    _device = torch.device(
-        os.environ.get("TUMOR_DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
-    )
-    _model = load_model(checkpoint, device=_device)
-    log.info(f"Tumor detection model ready on {_device}")
-    return _model
+    if _device is None:
+        _device = torch.device(
+            os.environ.get("TUMOR_DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
+        )
+
+    _models[organ] = load_model(checkpoint, device=_device)
+    log.info(f"Tumor detection model for '{organ}' ready on {_device}")
+    return _models[organ]
 
 
 def _normalize_uploaded_image(filename: str, content_type: str | None, content: bytes) -> tuple[str, bytes]:
@@ -97,6 +105,10 @@ class TumorAnalysisResponse(BaseModel):
     tumor_detected: bool  = Field(..., description="True if tumour probability ≥ threshold")
     confidence:     float = Field(..., ge=0.0, le=1.0, description="Tumour class probability")
     location:       str   = Field(..., description="Approximate anatomical region")
+    detected_organ: str   = Field(..., description="Organ selected for tumor model routing")
+    organ_detection_confidence: float = Field(..., ge=0.0, le=1.0)
+    organ_detection_source: str = Field(..., description="request_hint | organ_classifier | fallback_default")
+    organ_detection_warning: Optional[str] = Field(None, description="Routing warning if classifier/checkpoints are missing")
     body_region:    str   = Field(..., description="Current anatomical region supported by this model")
     bounding_box:   BoundingBox
     raw_scores:     dict
@@ -108,10 +120,32 @@ class TumorAnalysisResponse(BaseModel):
     heatmap_base64: Optional[str] = Field(None, description="PNG overlay as data-URI")
 
 
-def _build_clinical_guidance(result: dict, modality: str) -> dict:
+def _build_clinical_guidance(result: dict, modality: str, organ: str, routing_warning: str = "") -> dict:
     """Build triage guidance while keeping the current model scoped to brain scans."""
     detected = bool(result.get("tumor_detected"))
     confidence = float(result.get("confidence", 0.0) or 0.0)
+
+    if organ == "liver":
+        red_flags = [
+            "Vomiting blood or black stools",
+            "Rapidly increasing abdominal swelling",
+            "Severe right upper abdominal pain with fever",
+            "Confusion, severe drowsiness, or jaundice worsening quickly",
+        ]
+    elif organ == "spinal_cord":
+        red_flags = [
+            "New inability to walk or sudden leg weakness",
+            "Loss of bladder or bowel control",
+            "Progressive numbness in legs or around groin/saddle area",
+            "Severe back pain with neurological symptoms",
+        ]
+    else:
+        red_flags = [
+            "New seizures or fainting",
+            "Sudden weakness, numbness, or facial droop",
+            "Severe persistent headache with vomiting",
+            "New speech, vision, or confusion changes",
+        ]
 
     if not detected:
         urgency = "routine"
@@ -143,21 +177,18 @@ def _build_clinical_guidance(result: dict, modality: str) -> dict:
         ]
 
     return {
-        "body_region": "brain",
+        "body_region": organ,
         "urgency_level": urgency,
         "next_steps": next_steps,
-        "red_flags": [
-            "New seizures or fainting",
-            "Sudden weakness, numbness, or facial droop",
-            "Severe persistent headache with vomiting",
-            "New speech, vision, or confusion changes",
-        ],
+        "red_flags": red_flags,
         "disclaimer": "This is an AI screening aid, not a medical diagnosis. A licensed clinician must confirm all findings.",
         "model_scope": {
-            "active_model": "brain_tumor_screening_v1",
+            "active_model": f"{organ}_tumor_screening_v1",
             "supported_modalities": ["mri", "ct", "xray"],
-            "supported_body_regions": ["brain"],
+            "supported_body_regions": get_available_tumor_organs() or ["brain"],
             "framework_ready_for_future_models": True,
+            "organ_classifier_configured": bool(os.environ.get("ORGAN_CLASSIFIER_CHECKPOINT")),
+            "routing_warning": routing_warning,
             "input_modality": modality,
         },
     }
@@ -169,8 +200,14 @@ def _build_clinical_guidance(result: dict, modality: str) -> dict:
 def health_check():
     """Liveness + readiness probe."""
     try:
-        model = _get_model()
-        return {"status": "ok", "device": str(_device), "model": "loaded"}
+        _get_model("brain")
+        return {
+            "status": "ok",
+            "device": str(_device),
+            "model": "loaded",
+            "available_tumor_organs": get_available_tumor_organs(),
+            "organ_classifier_configured": bool(os.environ.get("ORGAN_CLASSIFIER_CHECKPOINT")),
+        }
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
 
@@ -179,6 +216,7 @@ def health_check():
 async def analyze_scan(
     file:           UploadFile = File(...,   description="Medical scan image (PNG/JPG/WEBP)"),
     modality:       str        = Form("mri", description="mri | ct | xray"),
+    organ_hint:     Optional[str] = Form(None, description="Optional organ hint: brain | liver | spinal_cord"),
     threshold:      float      = Form(0.50,  description="Detection confidence threshold"),
     return_heatmap: bool       = Form(False, description="Include Grad-CAM overlay"),
 ):
@@ -201,7 +239,17 @@ async def analyze_scan(
         tmp_path = tmp.name
 
     try:
-        model  = _get_model()
+        organ_decision = _organ_router.detect(normalized_content, organ_hint)
+        organ = normalize_organ_name(str(organ_decision.get("organ", "brain"))) or "brain"
+
+        try:
+            model = _get_model(organ)
+        except RuntimeError as model_err:
+            raise HTTPException(
+                status_code=503,
+                detail=f"No tumor model is configured for detected organ '{organ}'. {model_err}",
+            )
+
         gradcam = bool(int(os.environ.get("TUMOR_GRADCAM", "1"))) and return_heatmap
 
         result = predict(
@@ -213,6 +261,15 @@ async def analyze_scan(
             use_gradcam = gradcam,
             device      = _device,
         )
+
+        result.update({
+            "detected_organ": organ,
+            "organ_detection_confidence": float(organ_decision.get("confidence", 0.0) or 0.0),
+            "organ_detection_source": str(organ_decision.get("source", "unknown")),
+            "organ_detection_warning": str(organ_decision.get("warning", "") or ""),
+        })
+    except HTTPException:
+        raise
     except Exception as e:
         log.exception("Inference error")
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
@@ -223,6 +280,13 @@ async def analyze_scan(
         result.pop("heatmap_base64", None)
     result.pop("segmentation_mask", None)
 
-    result.update(_build_clinical_guidance(result, modality))
+    result.update(
+        _build_clinical_guidance(
+            result,
+            modality,
+            result.get("detected_organ", "brain"),
+            result.get("organ_detection_warning", ""),
+        )
+    )
 
     return JSONResponse(content=result)
