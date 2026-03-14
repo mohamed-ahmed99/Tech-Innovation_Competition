@@ -9,12 +9,14 @@ Endpoints:
 from __future__ import annotations
 
 import logging
+import io
 import os
 import tempfile
 from pathlib import Path
 from typing import Optional
 
 import torch
+from PIL import Image, UnidentifiedImageError
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -28,6 +30,8 @@ router = APIRouter(tags=["Tumor Detection"])
 
 _model:  Optional[torch.nn.Module] = None
 _device: Optional[torch.device]    = None
+
+SUPPORTED_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 
 
 def _get_model() -> torch.nn.Module:
@@ -50,6 +54,34 @@ def _get_model() -> torch.nn.Module:
     _model = load_model(checkpoint, device=_device)
     log.info(f"Tumor detection model ready on {_device}")
     return _model
+
+
+def _normalize_uploaded_image(filename: str, content_type: str | None, content: bytes) -> tuple[str, bytes]:
+    """
+    Normalize uploaded images into formats that the inference pipeline can load reliably.
+    WebP is converted to PNG to avoid OpenCV codec issues in slim containers.
+    """
+    suffix = Path(filename or "scan.png").suffix.lower()
+
+    if suffix not in SUPPORTED_SUFFIXES:
+        if content_type == "image/webp":
+            suffix = ".webp"
+        else:
+            raise HTTPException(status_code=415, detail="Unsupported file type. Upload PNG, JPG, or WEBP.")
+
+    if suffix != ".webp":
+        return suffix, content
+
+    try:
+        with Image.open(io.BytesIO(content)) as img:
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            return ".png", buffer.getvalue()
+    except (UnidentifiedImageError, OSError) as exc:
+        raise HTTPException(status_code=415, detail=f"Invalid WEBP image: {exc}")
 
 
 # ── Pydantic response schemas ─────────────────────────────────────────────────
@@ -84,7 +116,7 @@ def health_check():
 
 @router.post("/analyze", response_model=TumorAnalysisResponse)
 async def analyze_scan(
-    file:           UploadFile = File(...,   description="Medical scan image (PNG/JPG)"),
+    file:           UploadFile = File(...,   description="Medical scan image (PNG/JPG/WEBP)"),
     modality:       str        = Form("mri", description="mri | ct | xray"),
     threshold:      float      = Form(0.50,  description="Detection confidence threshold"),
     return_heatmap: bool       = Form(False, description="Include Grad-CAM overlay"),
@@ -96,13 +128,15 @@ async def analyze_scan(
     if modality not in ("mri", "ct", "xray"):
         raise HTTPException(status_code=400, detail=f"Invalid modality: {modality}")
 
-    suffix = Path(file.filename or "scan.png").suffix.lower()
-    if suffix not in (".png", ".jpg", ".jpeg"):
-        raise HTTPException(status_code=415, detail="Unsupported file type. Upload PNG or JPG.")
-
     content = await file.read()
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp.write(content)
+    normalized_suffix, normalized_content = _normalize_uploaded_image(
+        file.filename or "scan.png",
+        file.content_type,
+        content,
+    )
+
+    with tempfile.NamedTemporaryFile(suffix=normalized_suffix, delete=False) as tmp:
+        tmp.write(normalized_content)
         tmp_path = tmp.name
 
     try:
@@ -113,7 +147,7 @@ async def analyze_scan(
             image_path  = tmp_path,
             model       = model,
             modality    = modality,
-            file_format = suffix.lstrip("."),
+            file_format = normalized_suffix.lstrip("."),
             threshold   = threshold,
             use_gradcam = gradcam,
             device      = _device,

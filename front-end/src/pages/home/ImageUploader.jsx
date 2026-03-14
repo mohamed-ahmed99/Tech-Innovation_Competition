@@ -2,8 +2,8 @@ import React, { useRef, useState } from 'react';
 import { UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg'];
-const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg'];
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'];
 
 const ImageUploader = ({ onImageSelect }) => {
     const fileInputRef = useRef(null);
@@ -24,7 +24,7 @@ const ImageUploader = ({ onImageSelect }) => {
         if (!file) return;
 
         if (!isSupportedFile(file)) {
-            setFileError('Unsupported format. Please upload PNG or JPG/JPEG only.');
+            setFileError('Unsupported format. Please upload PNG, JPG/JPEG, or WEBP.');
             return;
         }
 
@@ -73,7 +73,7 @@ const ImageUploader = ({ onImageSelect }) => {
             >
                 <input 
                     type="file" 
-                    accept=".png,.jpg,.jpeg,image/png,image/jpeg" 
+                    accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" 
                     className="hidden" 
                     ref={fileInputRef}
                     onChange={handleFileChange}
@@ -89,7 +89,7 @@ const ImageUploader = ({ onImageSelect }) => {
                         Click or drag image here
                     </h3>
                     <p className="text-zinc-500 max-w-sm mx-auto text-sm">
-                        Supports PNG and JPG/JPEG only
+                        Supports PNG, JPG/JPEG, and WEBP
                     </p>
                 </div>
 
