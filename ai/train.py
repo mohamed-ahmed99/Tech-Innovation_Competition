@@ -1,3 +1,18 @@
+"""
+train.py
+--------
+Full training pipeline with:
+  • Mixed-precision training (torch.cuda.amp)
+  • Cosine annealing LR scheduler with linear warmup
+  • Early stopping
+  • Best-model checkpointing
+  • Epoch-level logging to console + optional W&B
+  • Validation after every epoch
+
+Run:
+    python train.py --data_dir /path/to/dataset --modality mri --epochs 50
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -302,7 +317,7 @@ def train(args):
     # ── Final test evaluation ─────────────────────────────────────────────────
     log.info("\n" + "═"*60)
     log.info("Loading best checkpoint for final test evaluation …")
-    best_ckpt = torch.load(ckpt_dir / "best_model.pth", map_location=device)
+    best_ckpt = torch.load(ckpt_dir / "best_model.pth", map_location=device, weights_only=False)
     model.load_state_dict(best_ckpt["model"])
 
     test_metrics = validate(model, test_loader, criterion, device)

@@ -1,3 +1,42 @@
+# Environment
 .env
+.env.*
 
+# Dependencies
 node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model checkpoints (too large for git)
+checkpoints/
+*.pth
+*.pt
+
+# Dataset files
+my_dataset/
+
+# Zip archives
+*.zip
+
+# SQLite (if any)
+*.db
+
+# Logs
+*.log

@@ -1,6 +1,13 @@
+"""
+api_adapter.py
+--------------
+FastAPI router exposing the NeuroGuard tumor detection model.
+Endpoints:
+  GET  /health   — liveness + readiness probe
+  POST /analyze  — full tumor analysis (classification + segmentation + grad-cam)
+"""
 from __future__ import annotations
 
-import io
 import logging
 import os
 import tempfile
@@ -12,17 +19,19 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
 from inference import load_model, predict
 
-log     = logging.getLogger(__name__)
-router  = APIRouter(tags=["Tumor Detection"])
+log    = logging.getLogger(__name__)
+router = APIRouter(tags=["Tumor Detection"])
 
-
-_model  : Optional[torch.nn.Module] = None
-_device : Optional[torch.device]    = None
+_model:  Optional[torch.nn.Module] = None
+_device: Optional[torch.device]    = None
 
 
 def _get_model() -> torch.nn.Module:
+    """Lazy-load the model on first request."""
     global _model, _device
 
     if _model is not None:
@@ -43,7 +52,7 @@ def _get_model() -> torch.nn.Module:
     return _model
 
 
-# ── Pydantic response schema ───────────────────────────────────────────────────
+# ── Pydantic response schemas ─────────────────────────────────────────────────
 
 class BoundingBox(BaseModel):
     x: int
@@ -53,12 +62,12 @@ class BoundingBox(BaseModel):
 
 
 class TumorAnalysisResponse(BaseModel):
-    tumor_detected:   bool  = Field(..., description="True if tumour probability ≥ threshold")
-    confidence:       float = Field(..., ge=0.0, le=1.0, description="Tumour class probability")
-    location:         str   = Field(..., description="Approximate anatomical region")
-    bounding_box:     BoundingBox
-    raw_scores:       dict
-    heatmap_base64:   Optional[str] = Field(None, description="PNG overlay as data-URI")
+    tumor_detected: bool  = Field(..., description="True if tumour probability ≥ threshold")
+    confidence:     float = Field(..., ge=0.0, le=1.0, description="Tumour class probability")
+    location:       str   = Field(..., description="Approximate anatomical region")
+    bounding_box:   BoundingBox
+    raw_scores:     dict
+    heatmap_base64: Optional[str] = Field(None, description="PNG overlay as data-URI")
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -75,37 +84,29 @@ def health_check():
 
 @router.post("/analyze", response_model=TumorAnalysisResponse)
 async def analyze_scan(
-    file:         UploadFile = File(...,   description="Medical scan image (PNG/JPG)"),
-    modality:     str        = Form("mri", description="mri | ct | xray"),
-    threshold:    float      = Form(0.50,  description="Detection confidence threshold"),
-    return_heatmap: bool     = Form(False, description="Include Grad-CAM overlay in response"),
+    file:           UploadFile = File(...,   description="Medical scan image (PNG/JPG)"),
+    modality:       str        = Form("mri", description="mri | ct | xray"),
+    threshold:      float      = Form(0.50,  description="Detection confidence threshold"),
+    return_heatmap: bool       = Form(False, description="Include Grad-CAM overlay"),
 ):
     """
     Analyse a medical scan and return tumour detection results.
-
-    Returns the same JSON schema as predict() in inference.py, minus
-    the raw segmentation mask (too large for API responses).
+    Returns structured JSON with tumor_detected, confidence, location, bounding_box, etc.
     """
-    # Validate modality
     if modality not in ("mri", "ct", "xray"):
         raise HTTPException(status_code=400, detail=f"Invalid modality: {modality}")
 
-    # Validate file type
     suffix = Path(file.filename or "scan.png").suffix.lower()
     if suffix not in (".png", ".jpg", ".jpeg"):
-        raise HTTPException(
-            status_code=415,
-            detail="Unsupported file type. Upload PNG or JPG.",
-        )
+        raise HTTPException(status_code=415, detail="Unsupported file type. Upload PNG or JPG.")
 
-    # Save upload to a temp file (inference.py needs a file path)
     content = await file.read()
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(content)
         tmp_path = tmp.name
 
     try:
-        model   = _get_model()
+        model  = _get_model()
         gradcam = bool(int(os.environ.get("TUMOR_GRADCAM", "1"))) and return_heatmap
 
         result = predict(
@@ -123,52 +124,8 @@ async def analyze_scan(
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
-    # Strip large fields unless requested
     if not return_heatmap:
         result.pop("heatmap_base64", None)
-    result.pop("segmentation_mask", None)   # always omit (use /analyze/mask for this)
+    result.pop("segmentation_mask", None)
 
     return JSONResponse(content=result)
-
-
-@router.post("/analyze/mask")
-async def analyze_scan_with_mask(
-    file:     UploadFile = File(...),
-    modality: str        = Form("mri"),
-    threshold: float     = Form(0.50),
-):
-
-    content = await file.read()
-    suffix  = Path(file.filename or "scan.png").suffix.lower()
-
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp.write(content)
-        tmp_path = tmp.name
-
-    try:
-        model  = _get_model()
-        result = predict(
-            image_path  = tmp_path,
-            model       = model,
-            modality    = modality,
-            file_format = suffix.lstrip("."),
-            threshold   = threshold,
-            use_gradcam = False,
-            device      = _device,
-        )
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
-
-    return JSONResponse(content=result)
-
-
-# ── Minimal standalone server (for testing without an existing backend) ────────
-
-if __name__ == "__main__":
-    import uvicorn
-    from fastapi import FastAPI
-
-    app = FastAPI(title="Tumour Detection API", version="1.0.0")
-    app.include_router(router, prefix="/api/v1/tumor")
-
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")

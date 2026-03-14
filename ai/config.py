@@ -32,7 +32,7 @@ class DataConfig:
 
 @dataclass
 class TrainingConfig:
-    epochs: int = 3
+    epochs: int = 50
     batch_size: int = 8
     learning_rate: float = 1e-4
     weight_decay: float = 1e-5

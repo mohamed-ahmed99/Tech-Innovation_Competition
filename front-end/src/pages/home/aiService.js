@@ -1,19 +1,29 @@
-export const sendImageToAI = async (imageFile, imageSrc) => {
+// Base URL for the backend — change for production
+// http://localhost:5150
+// https://neuro-gaurd-ai-backend.vercel.app
+const API_BASE = import.meta.env.VITE_API_BASE || "https://neuro-gaurd-ai-backend.vercel.app";
+
+/**
+ * Get auth headers if a token exists.
+ */
+function authHeaders() {
+    const token = localStorage.getItem("NeuroAi_Token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * Send an image to the AI model for analysis.
+ * Returns { analysis: string, structured: object }
+ */
+export const sendImageToAI = async (imageFile, modality = "mri") => {
     const formData = new FormData();
     formData.append("image", imageFile);
-    
-    // Append the image src as requested
-    if (imageSrc) {
-        formData.append("src", imageSrc);
-    }
+    formData.append("modality", modality);
 
-    // Change the port here if your backend is running on a different one
-
-    // http://localhost:5150/api/ai/analyze
-    // https://neuro-gaurd-ai-backend.vercel.app/api/ai/analyze
-    const response = await fetch("https://neuro-gaurd-ai-backend.vercel.app/api/ai/analyze", { 
-        method: "POST", 
-        body: formData 
+    const response = await fetch(`${API_BASE}/api/ai/analyze`, {
+        method: "POST",
+        body: formData,
+        headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -21,7 +31,48 @@ export const sendImageToAI = async (imageFile, imageSrc) => {
     }
 
     const resData = await response.json();
-    
-    // Return the specific string content from the response
-    return resData?.data?.analysis || "No analysis result received.";
+    return {
+        text:       resData?.data?.analysis || "No analysis result received.",
+        structured: resData?.data?.structured || null,
+    };
+};
+
+/**
+ * Fetch the user's analysis history.
+ * Returns an array of history items.
+ */
+export const getHistory = async () => {
+    const response = await fetch(`${API_BASE}/api/ai/history`, {
+        headers: authHeaders(),
+    });
+
+    if (!response.ok) return [];
+
+    const resData = await response.json();
+    return resData?.data?.history || [];
+};
+
+/**
+ * Fetch a single analysis by ID.
+ */
+export const getAnalysisById = async (id) => {
+    const response = await fetch(`${API_BASE}/api/ai/history/${id}`, {
+        headers: authHeaders(),
+    });
+
+    if (!response.ok) return null;
+
+    const resData = await response.json();
+    return resData?.data?.analysis || null;
+};
+
+/**
+ * Delete a specific history entry.
+ */
+export const deleteHistoryItem = async (id) => {
+    const response = await fetch(`${API_BASE}/api/ai/history/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+    });
+    return response.ok;
 };

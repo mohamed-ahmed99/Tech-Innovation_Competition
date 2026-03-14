@@ -7,10 +7,20 @@ import { useLocation } from 'react-router-dom';
 
 export default function MainLayout() {
     const [user] = useGlobalData('user');
+    const [, setGlobalData] = useGlobalData();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
     const location = useLocation();
+
+    const handleSelectHistory = (analysis) => {
+        setGlobalData('selectedAnalysis', analysis);
+    };
+
+    const handleNewChat = () => {
+        setGlobalData('selectedAnalysis', null);
+        setGlobalData('triggerNewChat', Date.now());
+    };
 
     return (
         <div className="h-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
@@ -27,6 +37,8 @@ export default function MainLayout() {
                     <Sidebar
                         isMobileOpen={isSidebarOpen}
                         onClose={() => setIsSidebarOpen(false)}
+                        onSelectHistory={handleSelectHistory}
+                        onNewChat={handleNewChat}
                     />
                 )}
 
