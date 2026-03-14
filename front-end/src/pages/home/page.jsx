@@ -72,7 +72,8 @@ const HomePage = () => {
             setStructuredResult(result.structured);
         } catch (error) {
             console.error("Error analyzing image:", error);
-            setAnalysisResult("Sorry, an error occurred while connecting to the server. Please check your backend and AI service are running.");
+            const msg = error?.message || "Unknown error while analyzing the image.";
+            setAnalysisResult(`Analysis failed: ${msg}`);
         } finally {
             setIsAnalyzing(false);
         }

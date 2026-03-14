@@ -2,6 +2,31 @@
 // No VITE_API_BASE needed — requests go to the same origin, Vercel proxies them
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 
+function parseErrorMessageFromResponse(responseBody) {
+    if (!responseBody) return null;
+
+    if (typeof responseBody === "string") {
+        return responseBody;
+    }
+
+    // Backend may wrap AI detail as a JSON string inside `detail`.
+    if (typeof responseBody.detail === "string") {
+        try {
+            const nested = JSON.parse(responseBody.detail);
+            if (nested?.detail) return nested.detail;
+        } catch {
+            // detail is plain text; use it directly.
+        }
+        return responseBody.detail;
+    }
+
+    if (typeof responseBody.message === "string") {
+        return responseBody.message;
+    }
+
+    return null;
+}
+
 /**
  * Get auth headers if a token exists.
  */
@@ -19,14 +44,27 @@ export const sendImageToAI = async (imageFile, modality = "mri") => {
     formData.append("image", imageFile);
     formData.append("modality", modality);
 
-    const response = await fetch(`${API_BASE}/api/ai/analyze`, {
-        method: "POST",
-        body: formData,
-        headers: authHeaders(),
-    });
+    let response;
+    try {
+        response = await fetch(`${API_BASE}/api/ai/analyze`, {
+            method: "POST",
+            body: formData,
+            headers: authHeaders(),
+        });
+    } catch {
+        throw new Error("Could not reach backend server. Check API URL/rewrite and backend availability.");
+    }
 
     if (!response.ok) {
-        throw new Error("Failed to analyze image from backend");
+        let errorBody = null;
+        try {
+            errorBody = await response.json();
+        } catch {
+            // Non-JSON error response.
+        }
+
+        const message = parseErrorMessageFromResponse(errorBody) || `Image analysis failed (HTTP ${response.status}).`;
+        throw new Error(message);
     }
 
     const resData = await response.json();

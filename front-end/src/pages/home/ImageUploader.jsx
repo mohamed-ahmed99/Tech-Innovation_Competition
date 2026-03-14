@@ -2,15 +2,39 @@ import React, { useRef, useState } from 'react';
 import { UploadCloud, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg'];
+const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg'];
+
 const ImageUploader = ({ onImageSelect }) => {
     const fileInputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
+    const [fileError, setFileError] = useState('');
+
+    const isSupportedFile = (file) => {
+        if (!file) return false;
+
+        const mime = (file.type || '').toLowerCase();
+        if (ALLOWED_MIME_TYPES.includes(mime)) return true;
+
+        const ext = file.name?.slice(file.name.lastIndexOf('.')).toLowerCase();
+        return ALLOWED_EXTENSIONS.includes(ext);
+    };
+
+    const pickFile = (file) => {
+        if (!file) return;
+
+        if (!isSupportedFile(file)) {
+            setFileError('Unsupported format. Please upload PNG or JPG/JPEG only.');
+            return;
+        }
+
+        setFileError('');
+        onImageSelect(file);
+    };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            onImageSelect(file);
-        }
+        pickFile(file);
     };
 
     const handleDragOver = (e) => {
@@ -26,9 +50,7 @@ const ImageUploader = ({ onImageSelect }) => {
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            onImageSelect(file);
-        }
+        pickFile(file);
     };
 
     return (
@@ -51,7 +73,7 @@ const ImageUploader = ({ onImageSelect }) => {
             >
                 <input 
                     type="file" 
-                    accept="image/*" 
+                    accept=".png,.jpg,.jpeg,image/png,image/jpeg" 
                     className="hidden" 
                     ref={fileInputRef}
                     onChange={handleFileChange}
@@ -67,9 +89,13 @@ const ImageUploader = ({ onImageSelect }) => {
                         Click or drag image here
                     </h3>
                     <p className="text-zinc-500 max-w-sm mx-auto text-sm">
-                        Supports standard image formats like JPG, PNG, WebP
+                        Supports PNG and JPG/JPEG only
                     </p>
                 </div>
+
+                {fileError && (
+                    <p className="text-xs text-rose-400 max-w-sm mx-auto">{fileError}</p>
+                )}
                 
                 <div className="mt-4 flex items-center justify-center gap-2 text-xs text-zinc-500 bg-zinc-950 px-4 py-2 rounded-lg border border-zinc-900">
                     <ImageIcon size={14} />
