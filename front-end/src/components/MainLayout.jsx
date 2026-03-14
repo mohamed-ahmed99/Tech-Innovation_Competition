@@ -13,7 +13,7 @@ export default function MainLayout() {
     const location = useLocation();
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+        <div className="h-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
 
             {/* Navbar */}
             <Navbar
