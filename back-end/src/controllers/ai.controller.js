@@ -71,13 +71,13 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
 
     const modality = req.body.modality || 'mri';
 
-    // Build multipart form to send to the Python AI service
-    const FormData = (await import('form-data')).default;
+    // Build multipart form using Node's native FormData/Blob for undici fetch compatibility.
     const form = new FormData();
-    form.append('file', req.file.buffer, {
-        filename: req.file.originalname || 'scan.png',
-        contentType: req.file.mimetype,
+    const fileBlob = new Blob([req.file.buffer], {
+        type: req.file.mimetype || 'application/octet-stream',
     });
+
+    form.append('file', fileBlob, req.file.originalname || 'scan.png');
     form.append('modality', modality);
     form.append('threshold', req.body.threshold || '0.50');
     form.append('return_heatmap', 'false');
@@ -86,7 +86,6 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
         const response = await fetch(`${AI_SERVICE_URL}/api/v1/tumor/analyze`, {
             method: 'POST',
             body: form,
-            headers: form.getHeaders(),
         });
 
         if (!response.ok) {
