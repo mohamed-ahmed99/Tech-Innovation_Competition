@@ -8,7 +8,10 @@ export const sendImageToAI = async (imageFile, imageSrc) => {
     }
 
     // Change the port here if your backend is running on a different one
-    const response = await fetch("http://localhost:5150/api/ai/analyze", { 
+
+    // http://localhost:5150/api/ai/analyze
+    // https://neuro-gaurd-ai-backend.vercel.app/api/ai/analyze
+    const response = await fetch("https://neuro-gaurd-ai-backend.vercel.app/api/ai/analyze", { 
         method: "POST", 
         body: formData 
     });

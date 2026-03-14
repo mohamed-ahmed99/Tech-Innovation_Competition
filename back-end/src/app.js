@@ -74,7 +74,12 @@ app.use((err, req, res, next) => {
 
 
 
-const Port = process.env.PORT || 5000
-app.listen(Port, () => console.log(`Server running on port ${Port}...`))
+const Port = process.env.PORT || 5000;
 
-// export default app
+// for local development
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(Port, () => console.log(`Development server running on port ${Port}...`));
+}
+
+// for Vercel deployment
+export default app;
