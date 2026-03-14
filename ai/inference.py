@@ -207,7 +207,7 @@ def load_model(
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = build_model(architecture=architecture, num_classes=2, pretrained=False)
-    ckpt  = torch.load(checkpoint_path, map_location=device)
+    ckpt  = torch.load(checkpoint_path, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model"])
     model.to(device)
     model.eval()
