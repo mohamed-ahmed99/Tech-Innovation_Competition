@@ -32,12 +32,9 @@ services:
     restart: unless-stopped
     depends_on:
       - ai-service
+    env_file:
+      - ./back-end/.env
     environment:
-      - PORT=5150
-      - NODE_ENV=production
-      - DB_URI=${DB_URI}                      # MongoDB connection string
-      - JWT_SECRET=${JWT_SECRET}
-      - ORIGINS=${ORIGINS}                    # Allowed CORS origins (comma-separated)
-      - AI_SERVICE_URL=http://ai-service:8000 # Internal Docker network URL
+      - AI_SERVICE_URL=http://ai-service:8000
     ports:
       - "5150:5150"

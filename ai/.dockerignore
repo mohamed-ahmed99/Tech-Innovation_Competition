@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+checkpoints/
+my_dataset/
+*.pth
+*.pt
+.idea/
