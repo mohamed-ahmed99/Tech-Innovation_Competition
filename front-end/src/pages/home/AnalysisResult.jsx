@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, RefreshCw, Copy, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AnalysisResult = ({ result, onReset }) => {
+const AnalysisResult = ({ result, structured, onReset }) => {
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
@@ -38,6 +38,53 @@ const AnalysisResult = ({ result, onReset }) => {
         setTimeout(() => setIsCopied(false), 2000);
     };
 
+    const tumorDetected =
+        structured?.tumor_detected ?? structured?.tumorDetected ?? null;
+
+    const location = structured?.location || structured?.bodyRegion || structured?.body_region || 'brain';
+
+    const findings = structured?.advice?.findings ||
+        (tumorDetected === null
+            ? 'Analysis details are unavailable for this record.'
+            : tumorDetected
+                ? `Potential tumor-like finding detected in ${location}.`
+                : 'No tumor-like finding detected by the current model.');
+
+    const confidenceValue =
+        typeof structured?.confidence === 'number'
+            ? `${(structured.confidence * 100).toFixed(1)}%`
+            : 'Not available';
+
+    const nextSteps =
+        structured?.next_steps ||
+        structured?.nextSteps ||
+        structured?.advice?.recommendedNextSteps ||
+        [];
+
+    const redFlags =
+        structured?.red_flags ||
+        structured?.redFlags ||
+        structured?.advice?.urgentCareFlags ||
+        [];
+
+    const disclaimer =
+        structured?.disclaimer ||
+        structured?.advice?.disclaimer ||
+        'This AI output is a screening aid and not a diagnosis. Please consult a licensed clinician.';
+
+    const urgencyLevel =
+        structured?.urgency_level ||
+        structured?.urgencyLevel ||
+        structured?.advice?.urgencyLevel ||
+        'routine';
+
+    const urgencyClass =
+        urgencyLevel === 'urgent'
+            ? 'text-rose-300 bg-rose-500/10 border-rose-500/30'
+            : urgencyLevel === 'priority'
+                ? 'text-amber-300 bg-amber-500/10 border-amber-500/30'
+                : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30';
+
     return (
         <motion.div 
             initial={{ opacity: 0, y: 15 }}
@@ -70,12 +117,55 @@ const AnalysisResult = ({ result, onReset }) => {
                     ref={containerRef}
                     className="p-5 sm:p-6"
                 >
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
+                            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Findings</p>
+                            <p className="text-sm text-zinc-200 leading-relaxed">{findings}</p>
+                        </div>
+
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
+                            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Confidence</p>
+                            <p className="text-sm text-zinc-100 font-semibold">{confidenceValue}</p>
+                            <div className={`inline-flex items-center mt-3 px-2.5 py-1 text-xs border rounded-full ${urgencyClass}`}>
+                                Urgency: {urgencyLevel}
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 sm:col-span-2">
+                            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Recommended Next Steps</p>
+                            {nextSteps.length > 0 ? (
+                                <ul className="space-y-1.5 text-sm text-zinc-200">
+                                    {nextSteps.map((item, idx) => (
+                                        <li key={`next-step-${idx}`} className="leading-relaxed">- {item}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-zinc-400">No follow-up guidance available for this record.</p>
+                            )}
+                        </div>
+
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 sm:col-span-2">
+                            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">When to seek urgent care</p>
+                            {redFlags.length > 0 ? (
+                                <ul className="space-y-1.5 text-sm text-zinc-200">
+                                    {redFlags.map((item, idx) => (
+                                        <li key={`red-flag-${idx}`} className="leading-relaxed">- {item}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-zinc-400">No urgent warning signs available for this record.</p>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="prose prose-sm sm:prose-base prose-invert max-w-none text-zinc-300">
                         <p className="whitespace-pre-wrap leading-relaxed">
                             {displayedText}
                             {isTyping && <span className="inline-block w-1.5 sm:w-2 h-4 sm:h-5 ml-1 bg-zinc-300 animate-pulse align-middle rounded-sm"></span>}
                         </p>
                     </div>
+
+                    <p className="mt-4 text-xs text-zinc-500 leading-relaxed">{disclaimer}</p>
                 </div>
                 
                 {/* Footer Actions */}

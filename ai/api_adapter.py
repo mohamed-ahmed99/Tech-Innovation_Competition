@@ -97,9 +97,70 @@ class TumorAnalysisResponse(BaseModel):
     tumor_detected: bool  = Field(..., description="True if tumour probability ≥ threshold")
     confidence:     float = Field(..., ge=0.0, le=1.0, description="Tumour class probability")
     location:       str   = Field(..., description="Approximate anatomical region")
+    body_region:    str   = Field(..., description="Current anatomical region supported by this model")
     bounding_box:   BoundingBox
     raw_scores:     dict
+    urgency_level:  str   = Field(..., description="routine | priority | urgent")
+    next_steps:     list[str] = Field(default_factory=list, description="Recommended non-diagnostic follow-up actions")
+    red_flags:      list[str] = Field(default_factory=list, description="Symptoms that should trigger urgent care")
+    disclaimer:     str   = Field(..., description="Safety disclaimer for non-diagnostic use")
+    model_scope:    dict  = Field(default_factory=dict, description="Model capability metadata for future multimodal expansion")
     heatmap_base64: Optional[str] = Field(None, description="PNG overlay as data-URI")
+
+
+def _build_clinical_guidance(result: dict, modality: str) -> dict:
+    """Build triage guidance while keeping the current model scoped to brain scans."""
+    detected = bool(result.get("tumor_detected"))
+    confidence = float(result.get("confidence", 0.0) or 0.0)
+
+    if not detected:
+        urgency = "routine"
+        next_steps = [
+            "Review this result with your clinician during routine follow-up.",
+            "If symptoms persist, ask for a formal radiology assessment or repeat imaging.",
+            "Keep previous scans/reports for side-by-side comparison.",
+        ]
+    elif confidence >= 0.85:
+        urgency = "urgent"
+        next_steps = [
+            "Arrange specialist review (radiology/neurology/oncology) as soon as possible.",
+            "Seek same-day urgent care if any red-flag symptoms are present.",
+            "Bring prior scans and clinical notes to the consultation.",
+        ]
+    elif confidence >= 0.60:
+        urgency = "priority"
+        next_steps = [
+            "Book specialist follow-up within 24-72 hours.",
+            "Request a radiologist-confirmed interpretation and treatment planning advice.",
+            "Track any new neurological symptoms and escalate care if they worsen.",
+        ]
+    else:
+        urgency = "priority"
+        next_steps = [
+            "Treat this as a flagged screening result and confirm with a clinician.",
+            "Consider repeat imaging or additional modalities if advised by your doctor.",
+            "Do not make treatment decisions based only on this model output.",
+        ]
+
+    return {
+        "body_region": "brain",
+        "urgency_level": urgency,
+        "next_steps": next_steps,
+        "red_flags": [
+            "New seizures or fainting",
+            "Sudden weakness, numbness, or facial droop",
+            "Severe persistent headache with vomiting",
+            "New speech, vision, or confusion changes",
+        ],
+        "disclaimer": "This is an AI screening aid, not a medical diagnosis. A licensed clinician must confirm all findings.",
+        "model_scope": {
+            "active_model": "brain_tumor_screening_v1",
+            "supported_modalities": ["mri", "ct", "xray"],
+            "supported_body_regions": ["brain"],
+            "framework_ready_for_future_models": True,
+            "input_modality": modality,
+        },
+    }
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -161,5 +222,7 @@ async def analyze_scan(
     if not return_heatmap:
         result.pop("heatmap_base64", None)
     result.pop("segmentation_mask", None)
+
+    result.update(_build_clinical_guidance(result, modality))
 
     return JSONResponse(content=result)

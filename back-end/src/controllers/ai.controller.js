@@ -5,12 +5,58 @@ import Analysis from '../models/analysis.model.js';
 // URL of the Python AI service (set via env var, default to localhost for dev)
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
+function buildAdvice(result, modality = 'mri') {
+    const detected = Boolean(result?.tumor_detected ?? result?.tumorDetected);
+    const confidence = Number(result?.confidence || 0);
+    const location = result?.location || 'undetermined region';
+    const urgencyLevel = result?.urgency_level || 'routine';
+
+    const findings = detected
+        ? `Potential tumor-like finding detected in ${location} (${modality.toUpperCase()} scan).`
+        : `No tumor-like finding detected on this ${modality.toUpperCase()} scan by the current model.`;
+
+    const nextSteps = Array.isArray(result?.next_steps) && result.next_steps.length > 0
+        ? result.next_steps
+        : detected
+            ? [
+                'Arrange specialist follow-up and radiology confirmation.',
+                'Share prior imaging for comparison during consultation.',
+              ]
+            : [
+                'Continue routine follow-up with your clinician.',
+                'If symptoms persist, discuss repeat imaging.',
+              ];
+
+    const redFlags = Array.isArray(result?.red_flags) && result.red_flags.length > 0
+        ? result.red_flags
+        : [
+            'New seizures or loss of consciousness',
+            'Sudden one-sided weakness or numbness',
+            'Severe persistent headache with vomiting',
+            'Acute confusion, speech, or vision changes',
+          ];
+
+    const disclaimer =
+        result?.disclaimer ||
+        'This AI output is a screening aid and not a diagnosis. Please consult a licensed clinician.';
+
+    return {
+        findings,
+        confidencePercent: Number((confidence * 100).toFixed(1)),
+        urgencyLevel,
+        recommendedNextSteps: nextSteps,
+        urgentCareFlags: redFlags,
+        disclaimer,
+    };
+}
+
 /**
  * Format the raw model JSON into a human-readable medical report.
  */
 function formatReport(result) {
-    const { tumor_detected, confidence, location, bounding_box, raw_scores } = result;
+    const { tumor_detected, confidence, location, bounding_box, raw_scores, modality } = result;
     const confPct = (confidence * 100).toFixed(1);
+    const advice = buildAdvice(result, modality || 'mri');
 
     if (!tumor_detected) {
         return `🧠 NeuroGuard Analysis Report
@@ -26,7 +72,13 @@ The model did not identify any abnormal regions in this scan with the current th
   • Tumor:  ${(raw_scores.tumor * 100).toFixed(1)}%
 
 💡 Recommendation:
-This is an automated screening result. Please consult with a qualified radiologist for a comprehensive diagnosis.
+${advice.recommendedNextSteps.join('\n')}
+
+⚠️ When to seek urgent care:
+${advice.urgentCareFlags.map((item) => `- ${item}`).join('\n')}
+
+📝 Disclaimer:
+${advice.disclaimer}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Powered by NeuroGuard AI`;
@@ -49,7 +101,13 @@ Powered by NeuroGuard AI`;
   • Tumor:  ${(raw_scores.tumor * 100).toFixed(1)}%
 
 💡 Recommendation:
-The model has identified a region of concern in the ${location}. This is an automated screening result and should be reviewed by a qualified medical professional for further evaluation.
+${advice.recommendedNextSteps.join('\n')}
+
+⚠️ When to seek urgent care:
+${advice.urgentCareFlags.map((item) => `- ${item}`).join('\n')}
+
+📝 Disclaimer:
+${advice.disclaimer}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Powered by NeuroGuard AI`;
@@ -99,7 +157,12 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
         }
 
         const aiResult = await response.json();
-        const formattedReport = formatReport(aiResult);
+        const advice = buildAdvice(aiResult, modality);
+        const aiResultWithAdvice = {
+            ...aiResult,
+            advice,
+        };
+        const formattedReport = formatReport({ ...aiResult, modality });
 
         // Save to history if user is authenticated
         if (req.user && req.user._id) {
@@ -117,6 +180,11 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
                 rawScores:       aiResult.raw_scores,
                 formattedReport,
                 modality,
+                urgencyLevel:    aiResult.urgency_level || advice.urgencyLevel,
+                nextSteps:       aiResult.next_steps || advice.recommendedNextSteps,
+                redFlags:        aiResult.red_flags || advice.urgentCareFlags,
+                disclaimer:      aiResult.disclaimer || advice.disclaimer,
+                bodyRegion:      aiResult.body_region || 'brain',
             });
         }
 
@@ -125,7 +193,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
             message: 'Image analyzed successfully',
             data: {
                 analysis: formattedReport,
-                structured: aiResult,
+                structured: aiResultWithAdvice,
             },
         });
     } catch (err) {
@@ -146,7 +214,7 @@ export const getHistory = asyncHandler(async (req, res) => {
     const analyses = await Analysis.find({ userId: req.user._id })
         .sort({ createdAt: -1 })
         .limit(50)
-        .select('title tumorDetected confidence location modality formattedReport createdAt');
+        .select('title tumorDetected confidence location modality formattedReport urgencyLevel nextSteps redFlags disclaimer bodyRegion createdAt');
 
     return res.status(200).json({
         status: status.SUCCESS,

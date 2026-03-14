@@ -28,6 +28,11 @@ const analysisSchema = new mongoose.Schema({
     // Human-readable formatted report
     formattedReport: { type: String, required: true },
     modality:        { type: String, default: 'mri' },
+    bodyRegion:      { type: String, default: 'brain' },
+    urgencyLevel:    { type: String, default: 'routine' },
+    nextSteps:       { type: [String], default: [] },
+    redFlags:        { type: [String], default: [] },
+    disclaimer:      { type: String, default: '' },
 }, {
     timestamps: true,
 });
