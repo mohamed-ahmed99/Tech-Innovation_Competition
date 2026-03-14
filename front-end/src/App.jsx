@@ -22,9 +22,8 @@ function App() {
     const token = localStorage.getItem("NeuroAi_Token");
     const verifyUser = async () => {
       if (token) {
-        // http://localhost:5150/api/auth/verify-me
-        // https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me
-        await getData("https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me");
+        // Uses Vercel proxy rewrite to reach the DigitalOcean backend
+        await getData("/api/auth/verify-me");
       } else {
         setGlobalData("user", null);
       }

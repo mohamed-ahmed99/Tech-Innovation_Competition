@@ -1,7 +1,6 @@
-// Base URL for the backend — change for production
-// http://localhost:5150
-// https://neuro-gaurd-ai-backend.vercel.app
-const API_BASE = import.meta.env.VITE_API_BASE || "https://neuro-gaurd-ai-backend.vercel.app";
+// Uses Vercel rewrites to proxy /api/* to the DigitalOcean backend
+// No VITE_API_BASE needed — requests go to the same origin, Vercel proxies them
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 /**
  * Get auth headers if a token exists.
