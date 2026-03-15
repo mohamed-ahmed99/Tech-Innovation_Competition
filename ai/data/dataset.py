@@ -310,6 +310,13 @@ def build_dataloaders(
     )
 
     n_total = len(full_dataset)
+    if n_total == 0:
+        raise ValueError(
+            "No samples found in dataset. Expected prepared structure with "
+            "`images/` and optional `masks/` plus `labels.csv`. "
+            "Run `python prepare_dataset.py --source_dir <raw> --output_dir <prepared>` first."
+        )
+
     n_train = int(n_total * train_split)
     n_val   = int(n_total * val_split)
     n_test  = n_total - n_train - n_val
