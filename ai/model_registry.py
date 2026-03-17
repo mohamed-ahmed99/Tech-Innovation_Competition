@@ -30,9 +30,9 @@ def get_tumor_checkpoint_for_organ(organ: str) -> Optional[str]:
     if organ == "brain":
         return os.environ.get("TUMOR_CHECKPOINT_BRAIN") or os.environ.get("TUMOR_CHECKPOINT")
     if organ == "liver":
-        return os.environ.get("TUMOR_CHECKPOINT_LIVER")
+        return os.environ.get("TUMOR_CHECKPOINT_LIVER") or os.environ.get("TUMOR_CHECKPOINT")
     if organ == "spinal_cord":
-        return os.environ.get("TUMOR_CHECKPOINT_SPINAL_CORD")
+        return os.environ.get("TUMOR_CHECKPOINT_SPINAL_CORD") or os.environ.get("TUMOR_CHECKPOINT")
     return None
 
 
@@ -43,6 +43,6 @@ def get_available_tumor_organs() -> List[str]:
 def checkpoint_env_map() -> Dict[str, str]:
     return {
         "brain": "TUMOR_CHECKPOINT_BRAIN or TUMOR_CHECKPOINT",
-        "liver": "TUMOR_CHECKPOINT_LIVER",
-        "spinal_cord": "TUMOR_CHECKPOINT_SPINAL_CORD",
+        "liver": "TUMOR_CHECKPOINT_LIVER or TUMOR_CHECKPOINT",
+        "spinal_cord": "TUMOR_CHECKPOINT_SPINAL_CORD or TUMOR_CHECKPOINT",
     }
