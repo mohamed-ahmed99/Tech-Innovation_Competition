@@ -206,13 +206,36 @@ def load_model(
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = build_model(architecture=architecture, num_classes=2, pretrained=False)
-    ckpt  = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    model.load_state_dict(ckpt["model"])
+    ckpt = torch.load(checkpoint_path, map_location=device, weights_only=False)
+
+    if isinstance(ckpt, dict) and "model" in ckpt and isinstance(ckpt["model"], dict):
+        state_dict = ckpt["model"]
+    elif isinstance(ckpt, dict):
+        state_dict = ckpt
+    else:
+        raise ValueError("Unsupported checkpoint format: expected dict or dict['model']")
+
+    # Legacy production checkpoints can be classifier-only EfficientNet weights
+    # (encoder.* + classifier.*) that do not include UNet decoder heads.
+    has_legacy_encoder = any(k.startswith("encoder.") for k in state_dict)
+    has_unet_encoder = any(k.startswith("enc0.") for k in state_dict)
+    has_decoder_heads = any(k.startswith("dec") or k.startswith("seg_head.") for k in state_dict)
+
+    resolved_architecture = architecture
+    if architecture == "efficientnet_unet" and has_legacy_encoder and not has_unet_encoder and not has_decoder_heads:
+        resolved_architecture = "efficientnet"
+
+    model = build_model(architecture=resolved_architecture, num_classes=2, pretrained=False)
+    model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
 
-    log.info(f"Model loaded from '{checkpoint_path}' (epoch {ckpt.get('epoch', '?')})")
+    log.info(
+        "Model loaded from '%s' (epoch %s, architecture=%s)",
+        checkpoint_path,
+        ckpt.get("epoch", "?"),
+        resolved_architecture,
+    )
     return model
 
 
