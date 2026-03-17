@@ -16,6 +16,7 @@ Run:
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -33,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from config import cfg
 from models.tumor_detector import build_model
 from data.dataset import build_dataloaders
+from utils.github_release_uploader import upload_files_to_release
 from utils.losses import CombinedLoss
 from utils.metrics import MetricAccumulator, print_classification_report
 
@@ -106,6 +108,67 @@ def save_checkpoint(
         path,
     )
     log.info(f"  ✔ Checkpoint saved → {path}")
+
+
+def maybe_upload_artifacts(args, ckpt_dir: Path, test_metrics: dict, best_f1: float):
+    """Upload checkpoints to GitHub Release (not LFS) to survive Colab runtime resets."""
+    if not args.auto_upload_release:
+        return
+
+    repo = args.github_repo or os.environ.get("GITHUB_REPO", "")
+    token = os.environ.get(args.github_token_env, "")
+
+    if not repo:
+        log.warning("[UPLOAD] Skipped: github repo not set. Use --github_repo or GITHUB_REPO env.")
+        return
+    if not token:
+        log.warning(f"[UPLOAD] Skipped: token env '{args.github_token_env}' is missing.")
+        return
+
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    data_name = Path(args.data_dir).name.replace(" ", "_")
+    prefix = args.asset_prefix or f"{args.modality}_{data_name}"
+
+    best_path = ckpt_dir / "best_model.pth"
+    last_path = ckpt_dir / "last_model.pth"
+    metrics_path = ckpt_dir / f"{prefix}_{ts}_metrics.json"
+
+    if not best_path.exists():
+        log.warning("[UPLOAD] Skipped: best_model.pth does not exist.")
+        return
+
+    metrics_payload = {
+        "timestamp": ts,
+        "best_f1": best_f1,
+        "test_metrics": test_metrics,
+        "modality": args.modality,
+        "data_dir": args.data_dir,
+        "architecture": args.architecture,
+    }
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        json.dump(metrics_payload, f, indent=2)
+
+    files = [best_path, metrics_path]
+    names = [f"{prefix}_best_{ts}.pth", f"{prefix}_metrics_{ts}.json"]
+
+    if args.upload_last_checkpoint and last_path.exists():
+        files.append(last_path)
+        names.append(f"{prefix}_last_{ts}.pth")
+
+    try:
+        uploaded = upload_files_to_release(
+            repo=repo,
+            tag=args.release_tag,
+            token=token,
+            files=files,
+            asset_names=names,
+            release_name=args.release_name,
+        )
+        log.info("[UPLOAD] GitHub Release upload complete:")
+        for asset_name, url in uploaded.items():
+            log.info(f"  {asset_name} -> {url}")
+    except Exception as exc:
+        log.error(f"[UPLOAD] Failed: {exc}")
 
 
 # ── Training / validation steps ────────────────────────────────────────────────
@@ -326,6 +389,8 @@ def train(args):
         if isinstance(v, float):
             log.info(f"  {k:>15s} = {v:.4f}")
 
+    maybe_upload_artifacts(args, ckpt_dir=ckpt_dir, test_metrics=test_metrics, best_f1=best_f1)
+
     return model, history
 
 
@@ -343,6 +408,13 @@ def parse_args():
     p.add_argument("--lr",           type=float, default=None)
     p.add_argument("--has_masks",    action="store_true", default=True)
     p.add_argument("--no_masks",     action="store_false", dest="has_masks")
+    p.add_argument("--auto_upload_release", action="store_true", help="Upload checkpoints to GitHub Release after training")
+    p.add_argument("--github_repo", default="", help="GitHub repo in owner/repo format")
+    p.add_argument("--github_token_env", default="GITHUB_TOKEN", help="Env var name for GitHub token")
+    p.add_argument("--release_tag", default="model-artifacts", help="Git tag used for release uploads")
+    p.add_argument("--release_name", default="Model Artifacts", help="GitHub release name")
+    p.add_argument("--asset_prefix", default="", help="Custom prefix for uploaded asset names")
+    p.add_argument("--upload_last_checkpoint", action="store_true", help="Upload last_model.pth in addition to best_model.pth")
     return p.parse_args()
 
 
