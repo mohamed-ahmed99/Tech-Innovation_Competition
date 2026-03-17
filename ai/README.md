@@ -186,6 +186,47 @@ python train.py \
   --last_checkpoint_name breast_last_model.pth
 ```
 
+### 7. Placeholder training setup for upcoming organs
+
+The training CLI is already prepared for `lung`, `kidney`, and `prostate` artifact naming.
+These are currently **training placeholders only** (frontend-visible), and are not yet wired for production routing/inference.
+
+```bash
+python train.py \
+  --organ lung \
+  --data_dir /path/to/lung_dataset \
+  --modality ct \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name lung_best_model.pth \
+  --last_checkpoint_name lung_last_model.pth
+```
+
+```bash
+python train.py \
+  --organ kidney \
+  --data_dir /path/to/kidney_dataset \
+  --modality ct \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name kidney_best_model.pth \
+  --last_checkpoint_name kidney_last_model.pth
+```
+
+```bash
+python train.py \
+  --organ prostate \
+  --data_dir /path/to/prostate_dataset \
+  --modality mri \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name prostate_best_model.pth \
+  --last_checkpoint_name prostate_last_model.pth
+```
+
 ---
 
 ## Preprocessing Pipeline

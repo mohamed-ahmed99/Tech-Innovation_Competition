@@ -123,9 +123,12 @@ const HomePage = () => {
                         <option value="brain">Brain</option>
                         <option value="liver">Liver</option>
                         <option value="breast">Breast</option>
+                        <option value="lung" disabled>Lung (coming soon)</option>
+                        <option value="kidney" disabled>Kidney (coming soon)</option>
+                        <option value="prostate" disabled>Prostate (coming soon)</option>
                     </select>
                     <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                        Choose Auto detect for automatic routing, or force Brain/Liver/Breast when you already know the scan type.
+                        Choose Auto detect for automatic routing, or force Brain/Liver/Breast when you already know the scan type. Lung, Kidney, and Prostate are UI placeholders for the upcoming release.
                     </p>
                 </div>
             </motion.div>

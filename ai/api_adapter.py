@@ -113,6 +113,9 @@ class TumorAnalysisResponse(BaseModel):
     bounding_box:   BoundingBox
     raw_scores:     dict
     urgency_level:  str   = Field(..., description="routine | priority | urgent")
+    explanation:    str   = Field(..., description="Plain-language summary of what the model found")
+    treatment_options: list[str] = Field(default_factory=list, description="Non-prescriptive treatment discussion points to review with clinicians")
+    expected_outlook: str = Field(..., description="General non-diagnostic outlook guidance for patient counseling")
     next_steps:     list[str] = Field(default_factory=list, description="Recommended non-diagnostic follow-up actions")
     red_flags:      list[str] = Field(default_factory=list, description="Symptoms that should trigger urgent care")
     disclaimer:     str   = Field(..., description="Safety disclaimer for non-diagnostic use")
@@ -156,36 +159,91 @@ def _build_clinical_guidance(result: dict, modality: str, organ: str, routing_wa
 
     if not detected:
         urgency = "routine"
+        explanation = (
+            f"The model did not flag a clear tumor-like pattern in this {organ} {modality.upper()} scan. "
+            "This does not fully exclude disease and should be interpreted with symptoms and formal radiology review."
+        )
+        expected_outlook = (
+            "Short-term outlook is generally reassuring from this AI screening output, "
+            "but clinical follow-up remains important if symptoms continue."
+        )
         next_steps = [
             "Review this result with your clinician during routine follow-up.",
             "If symptoms persist, ask for a formal radiology assessment or repeat imaging.",
             "Keep previous scans/reports for side-by-side comparison.",
         ]
+        treatment_options = [
+            "Observation and routine follow-up as advised by your clinician.",
+            "Symptom-focused supportive care when needed.",
+            "Repeat imaging only if clinically indicated.",
+        ]
     elif confidence >= 0.85:
         urgency = "urgent"
+        explanation = (
+            f"The model flagged a high-confidence tumor-like pattern in the {organ}. "
+            "This requires urgent specialist confirmation and treatment planning."
+        )
+        expected_outlook = (
+            "Outlook depends on confirmed diagnosis, stage, and response to therapy. "
+            "Earlier specialist intervention is associated with better outcomes."
+        )
         next_steps = [
             "Arrange specialist review (radiology/neurology/oncology) as soon as possible.",
             "Seek same-day urgent care if any red-flag symptoms are present.",
             "Bring prior scans and clinical notes to the consultation.",
         ]
+        treatment_options = [
+            "Urgent multidisciplinary evaluation to confirm diagnosis.",
+            "Potential options may include surgery, systemic therapy, or radiotherapy depending on final pathology.",
+            "Supportive symptom management while definitive care is arranged.",
+        ]
     elif confidence >= 0.60:
         urgency = "priority"
+        explanation = (
+            f"The model detected an intermediate-confidence suspicious pattern in the {organ}. "
+            "Priority specialist follow-up is recommended to confirm whether this is clinically significant."
+        )
+        expected_outlook = (
+            "Many intermediate-confidence findings are clarified after specialist imaging review. "
+            "Timely follow-up improves decision quality and reduces risk of delayed treatment."
+        )
         next_steps = [
             "Book specialist follow-up within 24-72 hours.",
             "Request a radiologist-confirmed interpretation and treatment planning advice.",
             "Track any new neurological symptoms and escalate care if they worsen.",
         ]
+        treatment_options = [
+            "Confirmatory imaging and specialist assessment before any definitive treatment.",
+            "If confirmed, treatment may involve local or systemic options based on disease extent.",
+            "Discuss risks, benefits, and alternatives with your care team.",
+        ]
     else:
         urgency = "priority"
+        explanation = (
+            f"The model raised a low-confidence alert in the {organ}. "
+            "This should be treated as a screening signal that needs clinician confirmation, not a diagnosis."
+        )
+        expected_outlook = (
+            "Low-confidence alerts are often resolved with follow-up review, but continued monitoring is important "
+            "when symptoms or risk factors are present."
+        )
         next_steps = [
             "Treat this as a flagged screening result and confirm with a clinician.",
             "Consider repeat imaging or additional modalities if advised by your doctor.",
             "Do not make treatment decisions based only on this model output.",
         ]
+        treatment_options = [
+            "Observation plus targeted re-evaluation based on clinical judgment.",
+            "Further diagnostic work-up if symptoms or physician concern persists.",
+            "Conservative symptom management while awaiting confirmation.",
+        ]
 
     return {
         "body_region": organ,
         "urgency_level": urgency,
+        "explanation": explanation,
+        "treatment_options": treatment_options,
+        "expected_outlook": expected_outlook,
         "next_steps": next_steps,
         "red_flags": red_flags,
         "disclaimer": "This is an AI screening aid, not a medical diagnosis. A licensed clinician must confirm all findings.",

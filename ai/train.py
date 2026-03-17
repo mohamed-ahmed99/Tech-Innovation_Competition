@@ -409,7 +409,12 @@ def train(args):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Train the tumour detection model")
-    p.add_argument("--organ", default="brain", choices=["brain", "liver", "spinal_cord", "breast"], help="Organ tag used for artifact naming")
+    p.add_argument(
+        "--organ",
+        default="brain",
+        choices=["brain", "liver", "spinal_cord", "breast", "lung", "kidney", "prostate"],
+        help="Organ tag used for artifact naming (lung/kidney/prostate are training placeholders for now)",
+    )
     p.add_argument("--data_dir",     required=True, help="Path to dataset root directory")
     p.add_argument("--modality",     default="mri", choices=["mri", "ct", "xray"])
     p.add_argument("--file_format",  default="png", choices=["png", "jpg", "nifti"])

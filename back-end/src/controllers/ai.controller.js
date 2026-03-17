@@ -16,6 +16,12 @@ function buildAdvice(result, modality = 'mri') {
         ? `Potential tumor-like finding detected in ${organ} (${location}, ${modality.toUpperCase()} scan).`
         : `No tumor-like finding detected in ${organ} on this ${modality.toUpperCase()} scan by the current model.`;
 
+    const explanation =
+        result?.explanation ||
+        (detected
+            ? `The AI model detected a suspicious pattern in ${organ}. This is a screening signal and requires specialist confirmation.`
+            : `The AI model did not detect a suspicious tumor-like pattern in ${organ}. This does not replace clinical diagnosis.`);
+
     const nextSteps = Array.isArray(result?.next_steps) && result.next_steps.length > 0
         ? result.next_steps
         : detected
@@ -27,6 +33,26 @@ function buildAdvice(result, modality = 'mri') {
                 'Continue routine follow-up with your clinician.',
                 'If symptoms persist, discuss repeat imaging.',
               ];
+
+        const treatmentOptions = Array.isArray(result?.treatment_options) && result.treatment_options.length > 0
+                ? result.treatment_options
+                : detected
+                        ? [
+                                'Confirm diagnosis with specialist imaging/pathology before definitive treatment.',
+                                'Discuss surgery, radiotherapy, and/or systemic therapy options with oncology team.',
+                                'Add supportive care for symptom control and quality of life.',
+                            ]
+                        : [
+                                'Usually no immediate intervention based on this AI screen alone.',
+                                'Continue routine follow-up and symptom-guided care with clinician advice.',
+                                'Repeat imaging only when clinically indicated.',
+                            ];
+
+        const expectedOutlook =
+                result?.expected_outlook ||
+                (detected
+                        ? 'Outlook depends on confirmed diagnosis, stage, and response to treatment. Early specialist care improves outcomes.'
+                        : 'Current AI screening result is reassuring, but prognosis should always be confirmed by clinical evaluation.');
 
     const redFlags = Array.isArray(result?.red_flags) && result.red_flags.length > 0
         ? result.red_flags
@@ -43,8 +69,11 @@ function buildAdvice(result, modality = 'mri') {
 
     return {
         findings,
+        explanation,
         confidencePercent: Number((confidence * 100).toFixed(1)),
         urgencyLevel,
+        treatmentOptions,
+        expectedOutlook,
         recommendedNextSteps: nextSteps,
         urgentCareFlags: redFlags,
         disclaimer,
@@ -75,6 +104,15 @@ The model did not identify any abnormal regions in this scan with the current th
 💡 Recommendation:
 ${advice.recommendedNextSteps.join('\n')}
 
+🧾 Explanation:
+${advice.explanation}
+
+💊 Treatment discussion points:
+${advice.treatmentOptions.map((item) => `- ${item}`).join('\n')}
+
+📈 Expected outlook:
+${advice.expectedOutlook}
+
 ⚠️ When to seek urgent care:
 ${advice.urgentCareFlags.map((item) => `- ${item}`).join('\n')}
 
@@ -103,6 +141,15 @@ Powered by NeuroGuard AI`;
 
 💡 Recommendation:
 ${advice.recommendedNextSteps.join('\n')}
+
+🧾 Explanation:
+${advice.explanation}
+
+💊 Treatment discussion points:
+${advice.treatmentOptions.map((item) => `- ${item}`).join('\n')}
+
+📈 Expected outlook:
+${advice.expectedOutlook}
 
 ⚠️ When to seek urgent care:
 ${advice.urgentCareFlags.map((item) => `- ${item}`).join('\n')}
@@ -187,6 +234,9 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
                 modality,
                 urgencyLevel:    aiResult.urgency_level || advice.urgencyLevel,
                 nextSteps:       aiResult.next_steps || advice.recommendedNextSteps,
+                explanation:     aiResult.explanation || advice.explanation,
+                treatmentOptions: aiResult.treatment_options || advice.treatmentOptions,
+                expectedOutlook: aiResult.expected_outlook || advice.expectedOutlook,
                 redFlags:        aiResult.red_flags || advice.urgentCareFlags,
                 disclaimer:      aiResult.disclaimer || advice.disclaimer,
                 bodyRegion:      aiResult.body_region || detectedOrgan,
@@ -223,7 +273,7 @@ export const getHistory = asyncHandler(async (req, res) => {
     const analyses = await Analysis.find({ userId: req.user._id })
         .sort({ createdAt: -1 })
         .limit(50)
-        .select('title tumorDetected confidence location modality formattedReport urgencyLevel nextSteps redFlags disclaimer bodyRegion detectedOrgan organDetectionConfidence organDetectionSource organDetectionWarning createdAt');
+        .select('title tumorDetected confidence location modality formattedReport urgencyLevel nextSteps explanation treatmentOptions expectedOutlook redFlags disclaimer bodyRegion detectedOrgan organDetectionConfidence organDetectionSource organDetectionWarning createdAt');
 
     return res.status(200).json({
         status: status.SUCCESS,

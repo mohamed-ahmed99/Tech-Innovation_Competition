@@ -35,6 +35,9 @@ const analysisSchema = new mongoose.Schema({
     organDetectionWarning:    { type: String, default: '' },
     urgencyLevel:    { type: String, default: 'routine' },
     nextSteps:       { type: [String], default: [] },
+    explanation:     { type: String, default: '' },
+    treatmentOptions:{ type: [String], default: [] },
+    expectedOutlook: { type: String, default: '' },
     redFlags:        { type: [String], default: [] },
     disclaimer:      { type: String, default: '' },
 }, {
