@@ -9,9 +9,15 @@ from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader, Subset
 import torchvision.transforms as T
 import torchvision.transforms.functional as TF
+
+try:
+    from sklearn.model_selection import train_test_split
+    SKLEARN_AVAILABLE = True
+except Exception:
+    SKLEARN_AVAILABLE = False
 
 # Optional NIfTI support (install: pip install nibabel)
 try:
@@ -321,15 +327,20 @@ def build_dataloaders(
     n_val   = int(n_total * val_split)
     n_test  = n_total - n_train - n_val
 
-    train_ds, val_ds, test_ds = random_split(
-        full_dataset,
-        [n_train, n_val, n_test],
-        generator=torch.Generator().manual_seed(42),
+    labels = np.array([int(s["label"]) for s in full_dataset.samples], dtype=np.int64)
+    n_train, n_val, n_test = _rebalance_split_sizes(labels, n_train, n_val, n_test)
+
+    train_idx, val_idx, test_idx = _build_split_indices(
+        full_dataset=full_dataset,
+        n_train=n_train,
+        n_val=n_val,
+        n_test=n_test,
+        seed=42,
     )
 
-    # Override transform for val/test subsets
-    val_ds.dataset  = _clone_dataset_with_split(full_dataset, "val")
-    test_ds.dataset = _clone_dataset_with_split(full_dataset, "test")
+    train_ds = Subset(_clone_dataset_with_split(full_dataset, "train"), train_idx)
+    val_ds = Subset(_clone_dataset_with_split(full_dataset, "val"), val_idx)
+    test_ds = Subset(_clone_dataset_with_split(full_dataset, "test"), test_idx)
 
     def _loader(ds, shuffle):
         return DataLoader(
@@ -338,7 +349,7 @@ def build_dataloaders(
             shuffle     = shuffle,
             num_workers = num_workers,
             pin_memory  = True,
-            drop_last   = shuffle,
+            drop_last   = bool(shuffle and len(ds) >= batch_size),
         )
 
     return _loader(train_ds, True), _loader(val_ds, False), _loader(test_ds, False)
@@ -352,3 +363,108 @@ def _clone_dataset_with_split(ds: MedicalImageDataset, split: str) -> MedicalIma
     clone.img_transform  = get_transforms(split, ds.image_size)
     clone.sync_aug       = SyncedAugmentation(split)
     return clone
+
+
+def _build_split_indices(
+    full_dataset: MedicalImageDataset,
+    n_train: int,
+    n_val: int,
+    n_test: int,
+    seed: int,
+) -> Tuple[List[int], List[int], List[int]]:
+    """
+    Build train/val/test indices with stratification when feasible.
+    Falls back to deterministic random split for tiny or single-class datasets.
+    """
+    n_total = len(full_dataset)
+    labels = np.array([int(s["label"]) for s in full_dataset.samples], dtype=np.int64)
+    all_idx = np.arange(n_total, dtype=np.int64)
+
+    if SKLEARN_AVAILABLE and _can_stratify(labels, n_train, n_val, n_test):
+        train_val_idx, test_idx = train_test_split(
+            all_idx,
+            test_size=n_test,
+            random_state=seed,
+            stratify=labels,
+            shuffle=True,
+        )
+        if n_val > 0:
+            train_val_labels = labels[train_val_idx]
+            val_ratio = n_val / float(len(train_val_idx))
+            train_idx, val_idx = train_test_split(
+                train_val_idx,
+                test_size=val_ratio,
+                random_state=seed,
+                stratify=train_val_labels,
+                shuffle=True,
+            )
+        else:
+            train_idx, val_idx = train_val_idx, np.array([], dtype=np.int64)
+
+        return train_idx.tolist(), val_idx.tolist(), test_idx.tolist()
+
+    # Fallback path: deterministic random split
+    g = np.random.default_rng(seed)
+    shuffled = g.permutation(all_idx)
+    train_idx = shuffled[:n_train]
+    val_idx = shuffled[n_train:n_train + n_val]
+    test_idx = shuffled[n_train + n_val:n_train + n_val + n_test]
+    return train_idx.tolist(), val_idx.tolist(), test_idx.tolist()
+
+
+def _can_stratify(labels: np.ndarray, n_train: int, n_val: int, n_test: int) -> bool:
+    if labels.size == 0:
+        return False
+
+    unique, counts = np.unique(labels, return_counts=True)
+    n_classes = int(unique.size)
+    if n_classes < 2:
+        return False
+
+    if np.min(counts) < 2:
+        return False
+
+    # Each split used for stratification should have room for each class.
+    if n_test > 0 and n_test < n_classes:
+        return False
+    if n_val > 0 and n_val < n_classes:
+        return False
+    if n_train < n_classes:
+        return False
+
+    return True
+
+
+def _rebalance_split_sizes(
+    labels: np.ndarray,
+    n_train: int,
+    n_val: int,
+    n_test: int,
+) -> Tuple[int, int, int]:
+    """Increase tiny val/test splits so stratification is possible on small datasets."""
+    n_total = int(labels.size)
+    unique = np.unique(labels)
+    n_classes = int(unique.size)
+
+    if n_total == 0 or n_classes < 2:
+        return n_train, n_val, n_test
+
+    min_each = n_classes
+    n_val = max(n_val, min_each)
+    n_test = max(n_test, min_each)
+    n_train = n_total - n_val - n_test
+
+    if n_train >= min_each:
+        return n_train, n_val, n_test
+
+    # If train becomes too small, borrow samples back from eval splits.
+    deficit = min_each - n_train
+    borrow = min(deficit, max(0, n_val - min_each))
+    n_val -= borrow
+    deficit -= borrow
+
+    borrow = min(deficit, max(0, n_test - min_each))
+    n_test -= borrow
+
+    n_train = n_total - n_val - n_test
+    return n_train, n_val, n_test

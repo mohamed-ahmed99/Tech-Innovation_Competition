@@ -127,13 +127,23 @@ from api_adapter import router as tumor_router
 app.include_router(tumor_router, prefix="/api/v1/tumor")
 ```
 
-Set the environment variable:
+Set environment variables for model checkpoints:
 ```bash
-export TUMOR_CHECKPOINT=/path/to/best_model.pth
+export TUMOR_CHECKPOINT_BRAIN=/path/to/brain_best_model.pth
+export TUMOR_CHECKPOINT_LIVER=/path/to/liver_best_model.pth
 export TUMOR_MODALITY=mri
 ```
 
 Then POST to `/api/v1/tumor/analyze` with a multipart file upload.
+
+For Docker Compose production, map checkpoints like this:
+```yaml
+environment:
+  - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/brain_best_model.pth
+  - TUMOR_CHECKPOINT_LIVER=/app/checkpoints/liver_best_model.pth
+volumes:
+  - ./ai/checkpoints:/app/checkpoints
+```
 
 ---
 

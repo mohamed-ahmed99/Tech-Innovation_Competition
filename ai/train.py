@@ -355,7 +355,7 @@ def train(args):
 
         # ── Checkpointing ─────────────────────────────────────────────────────
         val_f1 = val_metrics["f1"]
-        if val_f1 > best_f1:
+        if val_f1 >= best_f1:
             best_f1      = val_f1
             patience_ctr = 0
             save_checkpoint(
@@ -380,7 +380,12 @@ def train(args):
     # ── Final test evaluation ─────────────────────────────────────────────────
     log.info("\n" + "═"*60)
     log.info("Loading best checkpoint for final test evaluation …")
-    best_ckpt = torch.load(ckpt_dir / "best_model.pth", map_location=device, weights_only=False)
+    best_path = ckpt_dir / "best_model.pth"
+    if not best_path.exists():
+        log.warning("best_model.pth not found. Falling back to last_model.pth for test evaluation.")
+        best_path = ckpt_dir / "last_model.pth"
+
+    best_ckpt = torch.load(best_path, map_location=device, weights_only=False)
     model.load_state_dict(best_ckpt["model"])
 
     test_metrics = validate(model, test_loader, criterion, device)

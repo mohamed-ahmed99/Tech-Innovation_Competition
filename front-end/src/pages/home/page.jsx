@@ -16,6 +16,7 @@ const HomePage = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [structuredResult, setStructuredResult] = useState(null);
+    const [selectedOrganHint, setSelectedOrganHint] = useState('auto');
 
     // Clean up the object URL when component unmounts or selected file changes
     useEffect(() => {
@@ -67,7 +68,8 @@ const HomePage = () => {
         setIsAnalyzing(true);
         
         try {
-            const result = await sendImageToAI(selectedFile);
+            const organHint = selectedOrganHint === 'auto' ? '' : selectedOrganHint;
+            const result = await sendImageToAI(selectedFile, 'mri', organHint);
             setAnalysisResult(result.text);
             setStructuredResult(result.structured);
         } catch (error) {
@@ -99,6 +101,26 @@ const HomePage = () => {
                 <p className="text-sm sm:text-base text-zinc-400 max-w-xl mx-auto leading-relaxed">
                     Upload your medical scan and the NeuroGuard model will analyze it for tumor detection, providing a detailed report with confidence scores and anatomical location.
                 </p>
+
+                <div className="mt-6 max-w-md mx-auto rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 text-left">
+                    <label htmlFor="organ-hint" className="block text-xs uppercase tracking-wide text-zinc-500 mb-2">
+                        Target Organ Routing
+                    </label>
+                    <select
+                        id="organ-hint"
+                        value={selectedOrganHint}
+                        onChange={(event) => setSelectedOrganHint(event.target.value)}
+                        disabled={isAnalyzing}
+                        className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500 disabled:opacity-60"
+                    >
+                        <option value="auto">Auto detect (recommended)</option>
+                        <option value="brain">Brain</option>
+                        <option value="liver">Liver</option>
+                    </select>
+                    <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+                        Choose Auto detect for automatic routing, or force Brain/Liver when you already know the scan type.
+                    </p>
+                </div>
             </motion.div>
 
             <div className="w-full max-w-4xl flex-1 flex flex-col justify-start relative z-10">

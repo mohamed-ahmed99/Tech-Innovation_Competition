@@ -9,7 +9,7 @@ const analysisSchema = new mongoose.Schema({
     },
     title: {
         type: String,
-        default: 'Brain Scan Analysis',
+        default: 'Medical Scan Analysis',
     },
     // Structured result from the AI model
     tumorDetected: { type: Boolean, required: true },
