@@ -163,6 +163,29 @@ python train.py \
   --last_checkpoint_name breast_last_model.pth
 ```
 
+If your breast dataset follows the common MRI folder layout with `train/Healthy`, `train/Sick`,
+`validation/Healthy`, and `validation/Sick`, prepare it first with:
+
+```bash
+python prepare_breast_dataset.py \
+  --source_dir "/path/to/Breast Cancer Patients MRI's" \
+  --output_dir /path/to/breast_prepared
+```
+
+Then train with MRI preprocessing:
+
+```bash
+python train.py \
+  --organ breast \
+  --data_dir /path/to/breast_prepared \
+  --modality mri \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name breast_best_model.pth \
+  --last_checkpoint_name breast_last_model.pth
+```
+
 ---
 
 ## Preprocessing Pipeline
