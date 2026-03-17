@@ -131,6 +131,7 @@ Set environment variables for model checkpoints:
 ```bash
 export TUMOR_CHECKPOINT_BRAIN=/path/to/brain_best_model.pth
 export TUMOR_CHECKPOINT_LIVER=/path/to/liver_best_model.pth
+export TUMOR_CHECKPOINT_BREAST=/path/to/breast_best_model.pth
 export TUMOR_MODALITY=mri
 ```
 
@@ -141,8 +142,25 @@ For Docker Compose production, map checkpoints like this:
 environment:
   - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/brain_best_model.pth
   - TUMOR_CHECKPOINT_LIVER=/app/checkpoints/liver_best_model.pth
+  - TUMOR_CHECKPOINT_BREAST=/app/checkpoints/breast_best_model.pth
 volumes:
   - ./ai/checkpoints:/app/checkpoints
+```
+
+### 6. Train a breast model checkpoint
+
+Use breast/mammography-style datasets with X-ray preprocessing and save output directly as `breast_best_model.pth`:
+
+```bash
+python train.py \
+  --organ breast \
+  --data_dir /path/to/breast_dataset \
+  --modality xray \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name breast_best_model.pth \
+  --last_checkpoint_name breast_last_model.pth
 ```
 
 ---

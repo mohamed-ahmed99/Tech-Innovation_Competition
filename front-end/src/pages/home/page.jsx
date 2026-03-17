@@ -69,7 +69,13 @@ const HomePage = () => {
         
         try {
             const organHint = selectedOrganHint === 'auto' ? '' : selectedOrganHint;
-            const result = await sendImageToAI(selectedFile, 'mri', organHint);
+            const modalityByOrgan = {
+                brain: 'mri',
+                liver: 'ct',
+                breast: 'xray',
+            };
+            const modality = organHint ? (modalityByOrgan[organHint] || 'mri') : 'mri';
+            const result = await sendImageToAI(selectedFile, modality, organHint);
             setAnalysisResult(result.text);
             setStructuredResult(result.structured);
         } catch (error) {
@@ -116,9 +122,10 @@ const HomePage = () => {
                         <option value="auto">Auto detect (recommended)</option>
                         <option value="brain">Brain</option>
                         <option value="liver">Liver</option>
+                        <option value="breast">Breast</option>
                     </select>
                     <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                        Choose Auto detect for automatic routing, or force Brain/Liver when you already know the scan type.
+                        Choose Auto detect for automatic routing, or force Brain/Liver/Breast when you already know the scan type.
                     </p>
                 </div>
             </motion.div>

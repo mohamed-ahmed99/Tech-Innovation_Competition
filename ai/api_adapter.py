@@ -139,6 +139,13 @@ def _build_clinical_guidance(result: dict, modality: str, organ: str, routing_wa
             "Progressive numbness in legs or around groin/saddle area",
             "Severe back pain with neurological symptoms",
         ]
+    elif organ == "breast":
+        red_flags = [
+            "Rapidly enlarging breast lump",
+            "New skin dimpling, redness, or peau d'orange changes",
+            "Bloody nipple discharge",
+            "New hard axillary lump with pain or swelling",
+        ]
     else:
         red_flags = [
             "New seizures or fainting",
@@ -216,7 +223,7 @@ def health_check():
 async def analyze_scan(
     file:           UploadFile = File(...,   description="Medical scan image (PNG/JPG/WEBP)"),
     modality:       str        = Form("mri", description="mri | ct | xray"),
-    organ_hint:     Optional[str] = Form(None, description="Optional organ hint: brain | liver | spinal_cord"),
+    organ_hint:     Optional[str] = Form(None, description="Optional organ hint: brain | liver | spinal_cord | breast"),
     threshold:      float      = Form(0.50,  description="Detection confidence threshold"),
     return_heatmap: bool       = Form(False, description="Include Grad-CAM overlay"),
 ):

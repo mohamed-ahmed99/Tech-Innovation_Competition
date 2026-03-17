@@ -127,10 +127,10 @@ def maybe_upload_artifacts(args, ckpt_dir: Path, test_metrics: dict, best_f1: fl
 
     ts = time.strftime("%Y%m%d-%H%M%S")
     data_name = Path(args.data_dir).name.replace(" ", "_")
-    prefix = args.asset_prefix or f"{args.modality}_{data_name}"
+    prefix = args.asset_prefix or f"{args.organ}_{args.modality}_{data_name}"
 
-    best_path = ckpt_dir / "best_model.pth"
-    last_path = ckpt_dir / "last_model.pth"
+    best_path = ckpt_dir / args.best_checkpoint_name
+    last_path = ckpt_dir / args.last_checkpoint_name
     metrics_path = ckpt_dir / f"{prefix}_{ts}_metrics.json"
 
     if not best_path.exists():
@@ -317,8 +317,10 @@ def train(args):
     scaler = GradScaler(enabled=device.type == "cuda")
 
     # ── Checkpoint directory ──────────────────────────────────────────────────
-    ckpt_dir = Path(cfg.training.checkpoint_dir)
+    ckpt_dir = Path(args.checkpoint_dir or cfg.training.checkpoint_dir)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+    best_ckpt_name = args.best_checkpoint_name
+    last_ckpt_name = args.last_checkpoint_name
 
     # ── Training loop ─────────────────────────────────────────────────────────
     best_f1       = 0.0
@@ -360,13 +362,13 @@ def train(args):
             patience_ctr = 0
             save_checkpoint(
                 model, optimizer, epoch, val_metrics,
-                path=str(ckpt_dir / "best_model.pth"),
+                path=str(ckpt_dir / best_ckpt_name),
             )
         else:
             patience_ctr += 1
             save_checkpoint(
                 model, optimizer, epoch, val_metrics,
-                path=str(ckpt_dir / "last_model.pth"),
+                path=str(ckpt_dir / last_ckpt_name),
             )
 
         # ── Early stopping ────────────────────────────────────────────────────
@@ -380,10 +382,14 @@ def train(args):
     # ── Final test evaluation ─────────────────────────────────────────────────
     log.info("\n" + "═"*60)
     log.info("Loading best checkpoint for final test evaluation …")
-    best_path = ckpt_dir / "best_model.pth"
+    best_path = ckpt_dir / best_ckpt_name
     if not best_path.exists():
-        log.warning("best_model.pth not found. Falling back to last_model.pth for test evaluation.")
-        best_path = ckpt_dir / "last_model.pth"
+        log.warning(
+            "%s not found. Falling back to %s for test evaluation.",
+            best_ckpt_name,
+            last_ckpt_name,
+        )
+        best_path = ckpt_dir / last_ckpt_name
 
     best_ckpt = torch.load(best_path, map_location=device, weights_only=False)
     model.load_state_dict(best_ckpt["model"])
@@ -403,6 +409,7 @@ def train(args):
 
 def parse_args():
     p = argparse.ArgumentParser(description="Train the tumour detection model")
+    p.add_argument("--organ", default="brain", choices=["brain", "liver", "spinal_cord", "breast"], help="Organ tag used for artifact naming")
     p.add_argument("--data_dir",     required=True, help="Path to dataset root directory")
     p.add_argument("--modality",     default="mri", choices=["mri", "ct", "xray"])
     p.add_argument("--file_format",  default="png", choices=["png", "jpg", "nifti"])
@@ -420,6 +427,9 @@ def parse_args():
     p.add_argument("--release_name", default="Model Artifacts", help="GitHub release name")
     p.add_argument("--asset_prefix", default="", help="Custom prefix for uploaded asset names")
     p.add_argument("--upload_last_checkpoint", action="store_true", help="Upload last_model.pth in addition to best_model.pth")
+    p.add_argument("--checkpoint_dir", default="", help="Optional checkpoint output directory")
+    p.add_argument("--best_checkpoint_name", default="best_model.pth", help="Filename for best checkpoint")
+    p.add_argument("--last_checkpoint_name", default="last_model.pth", help="Filename for last checkpoint")
     return p.parse_args()
 
 

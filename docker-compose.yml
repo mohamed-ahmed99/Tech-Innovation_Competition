@@ -11,6 +11,7 @@ services:
     environment:
       - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/brain_best_model.pth
       - TUMOR_CHECKPOINT_LIVER=/app/checkpoints/liver_best_model.pth
+      - TUMOR_CHECKPOINT_BREAST=/app/checkpoints/breast_best_model.pth
       - TUMOR_CHECKPOINT=/app/checkpoints/brain_best_model.pth
       - TUMOR_DEVICE=cpu
       - AI_PORT=8000
