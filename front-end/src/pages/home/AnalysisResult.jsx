@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, RefreshCw, Copy, CheckCircle2, Download, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { jsPDF } from 'jspdf';
 
 const AnalysisResult = ({ result, structured, onReset }) => {
     const [displayedText, setDisplayedText] = useState('');
@@ -174,37 +175,50 @@ const AnalysisResult = ({ result, structured, onReset }) => {
         URL.revokeObjectURL(url);
     };
 
+    const buildPdfDocument = () => {
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const reportText = buildReportText();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 40;
+        const maxLineWidth = pageWidth - margin * 2;
+        const lineHeight = 15;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('NeuroGuard AI Report', margin, margin);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, margin, margin + 18);
+
+        doc.setFontSize(11);
+        const lines = doc.splitTextToSize(reportText, maxLineWidth);
+        let y = margin + 42;
+
+        for (const line of lines) {
+            if (y > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+            }
+            doc.text(line, margin, y);
+            y += lineHeight;
+        }
+
+        return doc;
+    };
+
     const handlePrintReport = () => {
-        const reportText = buildReportText()
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('\n', '<br/>');
+        const doc = buildPdfDocument();
+        doc.autoPrint();
+        const blobUrl = doc.output('bloburl');
+        window.open(blobUrl, '_blank');
+    };
 
-        const printWindow = window.open('', '_blank', 'width=900,height=700');
-        if (!printWindow) return;
-
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>NeuroGuard AI Report</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 24px; color: #111; line-height: 1.5; }
-                        h1 { margin: 0 0 16px; font-size: 22px; }
-                        .meta { color: #444; margin-bottom: 14px; }
-                        .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; }
-                    </style>
-                </head>
-                <body>
-                    <h1>NeuroGuard AI - Patient Screening Report</h1>
-                    <p class="meta">Generated: ${new Date().toLocaleString()}</p>
-                    <div class="card">${reportText}</div>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+    const handleDownloadPdf = () => {
+        const doc = buildPdfDocument();
+        const timeStamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        doc.save(`neuroguard-report-${detectedOrgan}-${timeStamp}.pdf`);
     };
 
     return (
@@ -333,14 +347,23 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                                     className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 border border-zinc-700/60"
                                 >
                                     <Download size={16} />
-                                    <span>Download report</span>
+                                    <span>Download text</span>
                                 </button>
+                                <button
+                                    onClick={handleDownloadPdf}
+                                    className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 border border-zinc-700/60"
+                                >
+                                    <Download size={16} />
+                                    <span>Download PDF</span>
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-2 mb-2">
                                 <button
                                     onClick={handlePrintReport}
                                     className="w-full py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 border border-zinc-700/60"
                                 >
                                     <Printer size={16} />
-                                    <span>Print report</span>
+                                    <span>Print PDF</span>
                                 </button>
                             </div>
                             <button

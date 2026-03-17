@@ -16,7 +16,7 @@ const HomePage = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [structuredResult, setStructuredResult] = useState(null);
-    const [selectedOrganHint, setSelectedOrganHint] = useState('auto');
+    const [selectedOrganHint, setSelectedOrganHint] = useState('brain');
 
     // Clean up the object URL when component unmounts or selected file changes
     useEffect(() => {
@@ -68,13 +68,13 @@ const HomePage = () => {
         setIsAnalyzing(true);
         
         try {
-            const organHint = selectedOrganHint === 'auto' ? '' : selectedOrganHint;
+            const organHint = selectedOrganHint;
             const modalityByOrgan = {
                 brain: 'mri',
                 liver: 'ct',
                 breast: 'xray',
             };
-            const modality = organHint ? (modalityByOrgan[organHint] || 'mri') : 'mri';
+            const modality = modalityByOrgan[organHint] || 'mri';
             const result = await sendImageToAI(selectedFile, modality, organHint);
             setAnalysisResult(result.text);
             setStructuredResult(result.structured);
@@ -119,7 +119,6 @@ const HomePage = () => {
                         disabled={isAnalyzing}
                         className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500 disabled:opacity-60"
                     >
-                        <option value="auto">Auto detect (recommended)</option>
                         <option value="brain">Brain</option>
                         <option value="liver">Liver</option>
                         <option value="breast">Breast</option>
@@ -128,7 +127,7 @@ const HomePage = () => {
                         <option value="prostate" disabled>Prostate (coming soon)</option>
                     </select>
                     <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                        Choose Auto detect for automatic routing, or force Brain/Liver/Breast when you already know the scan type. Lung, Kidney, and Prostate are UI placeholders for the upcoming release.
+                        Select the target organ directly. Lung, Kidney, and Prostate are UI placeholders for the upcoming release.
                     </p>
                 </div>
             </motion.div>
