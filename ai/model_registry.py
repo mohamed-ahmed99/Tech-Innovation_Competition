@@ -20,6 +20,19 @@ _ORGAN_ALIASES = {
 }
 
 
+def _resolve_checkpoint(primary_env_name: str) -> Optional[str]:
+    primary = os.environ.get(primary_env_name)
+    fallback = os.environ.get("TUMOR_CHECKPOINT")
+
+    if primary and os.path.exists(primary):
+        return primary
+    if fallback and os.path.exists(fallback):
+        return fallback
+
+    # If paths do not exist, keep previous behavior of returning configured values.
+    return primary or fallback
+
+
 def normalize_organ_name(value: Optional[str]) -> Optional[str]:
     if not value:
         return None
@@ -31,13 +44,13 @@ def normalize_organ_name(value: Optional[str]) -> Optional[str]:
 def get_tumor_checkpoint_for_organ(organ: str) -> Optional[str]:
     organ = normalize_organ_name(organ) or ""
     if organ == "brain":
-        return os.environ.get("TUMOR_CHECKPOINT_BRAIN") or os.environ.get("TUMOR_CHECKPOINT")
+        return _resolve_checkpoint("TUMOR_CHECKPOINT_BRAIN")
     if organ == "liver":
-        return os.environ.get("TUMOR_CHECKPOINT_LIVER") or os.environ.get("TUMOR_CHECKPOINT")
+        return _resolve_checkpoint("TUMOR_CHECKPOINT_LIVER")
     if organ == "spinal_cord":
-        return os.environ.get("TUMOR_CHECKPOINT_SPINAL_CORD") or os.environ.get("TUMOR_CHECKPOINT")
+        return _resolve_checkpoint("TUMOR_CHECKPOINT_SPINAL_CORD")
     if organ == "breast":
-        return os.environ.get("TUMOR_CHECKPOINT_BREAST") or os.environ.get("TUMOR_CHECKPOINT")
+        return _resolve_checkpoint("TUMOR_CHECKPOINT_BREAST")
     return None
 
 
