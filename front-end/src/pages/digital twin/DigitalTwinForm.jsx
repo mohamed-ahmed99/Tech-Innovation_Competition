@@ -90,7 +90,10 @@ const DigitalTwinForm = () => {
         }
 
         console.log('Form Data Ready for Server:', formData);
-        await postData("http://localhost:5150/api/ai/digital-twin", {}, formData);
+        
+        // http://localhost:5150/api/ai/digital-twin
+        // https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin
+        await postData("https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin", {}, formData);
     };
     console.log({data_p, status_p, message_p, loading_p});
 
