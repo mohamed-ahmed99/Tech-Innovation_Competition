@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, LogIn, Info, Menu, X, PanelLeft } from 'lucide-react';
+import { LogOut, LogIn, Info, Menu, X, PanelLeft, Cpu } from 'lucide-react';
 import { useGlobalData } from '../hooks/useGlobalData';
 import MobileMenu from './MobileMenu';
 
@@ -54,6 +54,14 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
 
             {/* Desktop: Right side */}
             <div className="flex items-center gap-6 md:gap-8">
+                <Link
+                    to="/simulation-3d"
+                    className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"
+                >
+                    <Cpu size={16} />
+                    3D Lab
+                </Link>
+
                 <Link
                     to="/about-us"
                     className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"

@@ -10,6 +10,7 @@ import { useGetMethod } from './hooks/useGetMethod';
 import Loading from './components/Loading';
 import MainLayout from './components/MainLayout';
 import AboutPage from './pages/about/page';
+import Simulation3DPage from './pages/simulation3d/page';
 
 
 
@@ -62,6 +63,7 @@ function App() {
         <Route element={<MainLayout />} >
           <Route path="/" element={<HomePage />} />
           <Route path="/about-us" element={<AboutPage />} />
+          <Route path="/simulation-3d" element={<Simulation3DPage />} />
         </Route>
 
       </Routes>
