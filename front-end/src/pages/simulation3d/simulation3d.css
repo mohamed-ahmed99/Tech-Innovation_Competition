@@ -366,7 +366,9 @@
 }
 
 .brain-canvas-shell {
+    position: relative;
     width: 100%;
+    height: 530px;
     min-height: 530px;
     border: 1px solid rgba(71, 85, 105, 0.75);
     border-radius: 16px;
@@ -377,7 +379,14 @@
     overflow: hidden;
 }
 
+.brain-canvas-shell > canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .brain-canvas-shell--compact {
+    height: 255px;
     min-height: 255px;
 }
 
@@ -507,6 +516,7 @@
     }
 
     .brain-canvas-shell {
+        height: 470px;
         min-height: 470px;
     }
 
@@ -530,6 +540,7 @@
     }
 
     .brain-canvas-shell {
+        height: 390px;
         min-height: 390px;
     }
 
