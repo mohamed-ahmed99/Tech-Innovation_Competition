@@ -11,6 +11,7 @@ import Loading from './components/Loading';
 import MainLayout from './components/MainLayout';
 import AboutPage from './pages/about/page';
 import Simulation3DPage from './pages/simulation3d/page';
+import DigitalTwinPage from './pages/digital twin/page';
 
 
 
@@ -24,13 +25,18 @@ function App() {
     const verifyUser = async () => {
       if (token) {
         // Uses Vercel proxy rewrite to reach the DigitalOcean backend
-        await getData("/api/auth/verify-me");
+
+        // http://localhost:5150/api/auth/verify-me
+        // https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me
+        await getData("https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me");
       } else {
         setGlobalData("user", null);
       }
     }
     verifyUser();
   }, []);
+
+  console.log({ data_g, status_g, loading_g, store });
 
   useEffect(() => {
     if (status_g === "success") {
@@ -64,6 +70,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/about-us" element={<AboutPage />} />
           <Route path="/simulation-3d" element={<Simulation3DPage />} />
+          <Route path="/digital-twin" element={<DigitalTwinPage />} />
         </Route>
 
       </Routes>

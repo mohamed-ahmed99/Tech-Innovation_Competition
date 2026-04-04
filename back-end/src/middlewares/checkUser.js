@@ -28,9 +28,14 @@ export const checkUser = (allowedRoles = []) => asyncHandler(async(req, res, nex
     }
 
     // is token in DataBase
-    const user = await Sessions.findOne({user:decoded._id, "sessions.token": token})
-    if (!user)
+    const user = await Sessions.findOne({user:decoded._id})
+    if (!user){
         return res.status(401).json({ status:"fail" ,message: "Session expired or invalid token" });
+    }
+    //check if token is in sessions
+    if(!user.sessions.find((session) => session.token === token)){
+        return res.status(401).json({ status:"fail" ,message: "Session expired or invalid token" });
+    }
 
     req.user = { ...decoded };
     next()

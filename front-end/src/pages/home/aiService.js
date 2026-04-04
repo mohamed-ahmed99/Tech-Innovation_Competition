@@ -1,6 +1,6 @@
 // Uses Vercel rewrites to proxy /api/* to the DigitalOcean backend
 // No VITE_API_BASE needed — requests go to the same origin, Vercel proxies them
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+const API_BASE = "https://neuro-gaurd-ai-backend.vercel.app";
 
 function parseErrorMessageFromResponse(responseBody) {
     if (!responseBody) return null;

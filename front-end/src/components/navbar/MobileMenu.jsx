@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, LogIn, Info, Cpu } from 'lucide-react';
 
-export default function MobileMenu({ isOpen, onClose, isUserAuthenticated, onLogout }) {
+export default function MobileMenu({ navLinks, isOpen, onClose, isUserAuthenticated, onLogout }) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -14,23 +14,17 @@ export default function MobileMenu({ isOpen, onClose, isUserAuthenticated, onLog
                     className="fixed inset-0 top-[70px] left-0 w-full h-[calc(100vh-70px)] bg-zinc-950/95 backdrop-blur-md z-40 flex flex-col p-6"
                 >
                     <div className="flex flex-col gap-4">
-                        <Link
-                            to="/simulation-3d"
-                            onClick={onClose}
-                            className="flex items-center gap-3 text-lg font-medium text-zinc-200 p-3 hover:bg-zinc-900 rounded-xl transition-colors"
-                        >
-                            <Cpu size={20} className="text-zinc-500" />
-                            3D Lab
-                        </Link>
-
-                        <Link
-                            to="/about-us"
-                            onClick={onClose}
-                            className="flex items-center gap-3 text-lg font-medium text-zinc-200 p-3 hover:bg-zinc-900 rounded-xl transition-colors"
-                        >
-                            <Info size={20} className="text-zinc-500" />
-                            About Us
-                        </Link>
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.to}
+                                to={link.to}
+                                onClick={onClose}
+                                className="flex items-center gap-3 text-lg font-medium text-zinc-200 p-3 hover:bg-zinc-900 rounded-xl transition-colors"
+                            >
+                                {link.icon}
+                                {link.label}
+                            </Link>
+                        ))}
 
                         <div className="mt-2 pt-4 border-t border-zinc-900">
                             {isUserAuthenticated ? (
@@ -56,7 +50,7 @@ export default function MobileMenu({ isOpen, onClose, isUserAuthenticated, onLog
 
                     <div className="mt-auto pb-6 text-center">
                         <p className="text-zinc-600 text-xs">
-                            &copy; 2024 NeuroAi Innovation.
+                            &copy; {new Date().getFullYear()} NeuroAi Innovation.
                         </p>
                     </div>
                 </motion.div>

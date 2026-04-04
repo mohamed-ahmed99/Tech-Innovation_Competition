@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useGlobalData } from '../hooks/useGlobalData';
-import Navbar from './Navbar';
+import Navbar from './navbar/Navbar';
 import Sidebar from '../pages/home/Sidebar';
 import { useLocation } from 'react-router-dom';
 

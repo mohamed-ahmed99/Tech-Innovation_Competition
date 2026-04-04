@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LogOut, LogIn, Info, Menu, X, PanelLeft, Cpu } from 'lucide-react';
-import { useGlobalData } from '../hooks/useGlobalData';
+import { useGlobalData } from '../../hooks/useGlobalData';
+
+// navbar
 import MobileMenu from './MobileMenu';
 
 
@@ -22,6 +24,13 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
     };
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+
+    const navLinks = [
+        { to: "/digital-twin", label: "Digital Twin", icon: <Cpu size={16} /> },
+        { to: "/simulation-3d", label: "3D Lab", icon: <Cpu size={16} /> },
+        { to: "/about-us", label: "About Us", icon: <Info size={16} /> },
+    ];
 
     return (
         <nav className="w-full h-[70px] px-6 md:px-12 flex items-center justify-between bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 sticky top-0 z-50">
@@ -52,23 +61,20 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
                 </Link>
             </div>
 
+
             {/* Desktop: Right side */}
             <div className="flex items-center gap-6 md:gap-8">
-                <Link
-                    to="/simulation-3d"
-                    className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"
-                >
-                    <Cpu size={16} />
-                    3D Lab
-                </Link>
 
-                <Link
-                    to="/about-us"
-                    className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"
-                >
-                    <Info size={16} />
-                    About Us
-                </Link>
+                {navLinks.map((link) => (
+                    <Link
+                        key={link.to}
+                        to={link.to}
+                        className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"
+                    >
+                        {link.icon}
+                        {link.label}
+                    </Link>
+                ))}
 
                 {isUserAuthenticated ? (
                     <motion.button
@@ -101,6 +107,7 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
 
             {/* Mobile Menu Component (Refined & Smaller) */}
             <MobileMenu
+                navLinks={navLinks}
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
                 isUserAuthenticated={isUserAuthenticated}
