@@ -4,8 +4,15 @@ import Button from '../../components/btns/Button';
 import List from '../../components/inputs/List';
 import { X } from 'lucide-react';
 import { validateDigitalTwinData } from './validation';
+import { usePostMethod } from '../../hooks/usePostMethod'
 
 const DigitalTwinForm = () => {
+
+    // my hooks
+    const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
+
+
+
     const [formData, setFormData] = useState({
         age: '',
         gender: '',
@@ -72,7 +79,7 @@ const DigitalTwinForm = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
         const { isValid, errors: validationErrors } = validateDigitalTwinData(formData);
@@ -83,9 +90,9 @@ const DigitalTwinForm = () => {
         }
 
         console.log('Form Data Ready for Server:', formData);
-        alert('Data validated successfully! Check console for final object.');
+        await postData("http://localhost:5150/api/ai/digital-twin", {}, formData);
     };
-
+    console.log({data_p, status_p, message_p, loading_p});
 
     const genderOptions = [
         { label: 'Male', value: 'male' },

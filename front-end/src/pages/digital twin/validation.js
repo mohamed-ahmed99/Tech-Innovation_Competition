@@ -9,8 +9,8 @@ export const validateDigitalTwinData = (data) => {
     // Age validation
     if (!data.age) {
         errors.age = "Age is required";
-    } else if (isNaN(data.age) || Number(data.age) <= 0 || Number(data.age) > 120) {
-        errors.age = "Please enter a valid age (1-120)";
+    } else if (data.age <= 0) {
+        errors.age = "age must be positive Number";
     }
 
     // Gender validation
