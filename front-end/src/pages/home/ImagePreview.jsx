@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 const ImagePreview = ({ previewUrl, onClear, onAnalyze, isAnalyzing }) => {
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, scale: 0.98, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -10 }}
@@ -12,14 +12,14 @@ const ImagePreview = ({ previewUrl, onClear, onAnalyze, isAnalyzing }) => {
         >
             <div className="relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/50 aspect-square sm:aspect-video md:aspect-[16/10] group flex items-center justify-center p-2">
                 <div className="w-full h-full relative rounded-xl overflow-hidden bg-zinc-950">
-                    <img 
-                        src={previewUrl} 
-                        alt="Selected preview" 
+                    <img
+                        src={previewUrl}
+                        alt="Selected preview"
                         className="w-full h-full object-contain"
                     />
-                    
+
                     {!isAnalyzing && (
-                        <motion.button 
+                        <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={onClear}
@@ -29,10 +29,10 @@ const ImagePreview = ({ previewUrl, onClear, onAnalyze, isAnalyzing }) => {
                             <X size={18} />
                         </motion.button>
                     )}
-                    
+
                     {isAnalyzing && (
                         <div className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center z-20">
-                            <motion.div 
+                            <motion.div
                                 initial={{ opacity: 0, y: 5 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="flex flex-col items-center gap-4 text-zinc-100"

@@ -7,9 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { sendImageToAI } from './aiService';
 
-const HomePage = () => {
+const ScanPage = () => {
     const [store, setGlobalData] = useGlobalData();
-    
+
     // State for the image selection and analysis process
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -64,9 +64,9 @@ const HomePage = () => {
 
     const handleAnalyze = async () => {
         if (!selectedFile) return;
-        
+
         setIsAnalyzing(true);
-        
+
         try {
             const organHint = selectedOrganHint;
             const modalityByOrgan = {
@@ -96,7 +96,7 @@ const HomePage = () => {
     return (
         <div className="min-h-full w-full py-10 px-4 sm:px-6 flex flex-col items-center bg-zinc-950 text-zinc-100 relative">
 
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-3xl w-full text-center mb-8 relative z-10"
@@ -139,9 +139,9 @@ const HomePage = () => {
                     )}
 
                     {selectedFile && !analysisResult && (
-                        <ImagePreview 
+                        <ImagePreview
                             key="preview"
-                            previewUrl={previewUrl} 
+                            previewUrl={previewUrl}
                             onClear={handleClearImage}
                             onAnalyze={handleAnalyze}
                             isAnalyzing={isAnalyzing}
@@ -149,18 +149,18 @@ const HomePage = () => {
                     )}
 
                     {analysisResult && (
-                        <AnalysisResult 
+                        <AnalysisResult
                             key="result"
                             result={analysisResult}
                             structured={structuredResult}
-                            onReset={handleReset} 
+                            onReset={handleReset}
                         />
                     )}
                 </AnimatePresence>
             </div>
-            
+
         </div>
     );
 }
 
-export default HomePage;
+export default ScanPage;

@@ -4,11 +4,11 @@ import { Scan, Cpu, Lightbulb } from 'lucide-react';
 
 const ProjectVision = () => {
     return (
-        <section className="py-12 px-6 md:px-12 bg-zinc-950 text-white relative overflow-hidden">
+        <section className="py-20 px-6 md:px-12 bg-background text-text-main relative overflow-hidden">
             {/* Background Accent */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-30"></div>
-                <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-white/10 via-transparent to-transparent opacity-30"></div>
+                <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-primary/10 via-transparent to-transparent opacity-30"></div>
+                <div className="absolute top-0 right-1/4 w-px h-full bg-gradient-to-b from-primary/10 via-transparent to-transparent opacity-30"></div>
             </div>
 
             <div className="max-w-7xl mx-auto relative z-10">
@@ -36,7 +36,7 @@ const ProjectVision = () => {
 
                 {/* Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    
+
                     {/* Left Side: Large Paragraph */}
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
@@ -45,16 +45,22 @@ const ProjectVision = () => {
                         transition={{ delay: 0.2 }}
                         className="lg:col-span-12"
                     >
-                        <p className="text-xl md:text-2xl font-light leading-snug text-zinc-300 max-w-5xl italic border-l-4 border-white pl-6 md:pl-8">
-                            "Our project focuses on using <span className="text-white font-medium">Artificial Intelligence</span> to assist in the analysis of medical images related to tumor screening across brain, liver, spinal cord, and breast studies. The platform allows users to upload a medical image, after which the AI system analyzes the image to help identify suspicious patterns."
-                        </p>
+                        <div className="border-l-[3px] border-primary pl-8 md:pl-12 py-3">
+                            <p className="text-2xl md:text-3xl font-medium leading-relaxed text-text-main max-w-5xl">
+                                An advanced <span className="text-primary font-bold">intelligent system</span> that leverages the latest artificial intelligence technologies to analyze medical imaging with exceptional precision for detecting diseases in the <span className="font-bold underline decoration-primary/20 underline-offset-4">brain, stomach, liver, and breast</span>.
+                            </p>
+                            
+                            <p className="mt-8 text-lg md:text-xl text-white/70 leading-relaxed max-w-4xl font-normal italic">
+                                It also creates a sophisticated <span className="text-text-main font-semibold">digital twin</span> of the patient, enabling the simulation of different treatment approaches before real-world application, ensuring faster diagnosis, higher accuracy, and highly personalized treatment for each patient.
+                            </p>
+                        </div>
                     </motion.div>
 
                     {/* Detailed Breakdowns */}
                     <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 md:mt-10">
-                        
+
                         {/* Box 1 */}
-                        <motion.div 
+                        {/* <motion.div 
                             initial={{ opacity: 0, scale: 0.95 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
@@ -70,10 +76,10 @@ const ProjectVision = () => {
                             <p className="text-zinc-400 leading-relaxed text-base">
                                 The AI system supports multi-organ tumor screening workflows and routes scans to the appropriate model profile. By leveraging modern AI techniques, the platform can process uploaded medical images and provide structured insights that help research teams review tumor-related patterns faster.
                             </p>
-                        </motion.div>
+                        </motion.div> */}
 
                         {/* Box 2 */}
-                        <motion.div 
+                        {/* <motion.div 
                             initial={{ opacity: 0, scale: 0.95 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             viewport={{ once: true }}
@@ -93,12 +99,12 @@ const ProjectVision = () => {
                                 <div className="h-px flex-1 bg-black/10"></div>
                                 <span className="text-[9px] font-mono tracking-widest text-black/40 uppercase">Efficiency & Research</span>
                             </div>
-                        </motion.div>
+                        </motion.div> */}
 
                     </div>
                 </div>
 
-               
+
             </div>
         </section>
     );
@@ -107,15 +113,15 @@ const ProjectVision = () => {
 
 // Helper to keep Activity icon working if imported correctly, otherwise we can use a generic one
 const Activity = ({ size, className }) => (
-    <svg 
-        width={size} 
-        height={size} 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
+    <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         className={className}
     >
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />

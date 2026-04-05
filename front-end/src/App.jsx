@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/home/page';
+import ScanPage from './pages/home/page';
 import AuthLayout from './pages/auth/AuthLayout';
 import SignUp from './pages/auth/SignUp';
 import LogIn from './pages/auth/LogIn';
@@ -9,7 +9,7 @@ import { useGlobalData } from './hooks/useGlobalData';
 import { useGetMethod } from './hooks/useGetMethod';
 import Loading from './components/Loading';
 import MainLayout from './components/MainLayout';
-import AboutPage from './pages/about/page';
+import HomePage from './pages/about/page';
 import Simulation3DPage from './pages/simulation3d/page';
 import DigitalTwinPage from './pages/digital twin/page';
 
@@ -68,7 +68,7 @@ function App() {
         {/* Main pages */}
         <Route element={<MainLayout />} >
           <Route path="/" element={<HomePage />} />
-          <Route path="/about-us" element={<AboutPage />} />
+          <Route path="/scan" element={<ScanPage />} />
           <Route path="/simulation-3d" element={<Simulation3DPage />} />
           <Route path="/digital-twin" element={<DigitalTwinPage />} />
         </Route>
