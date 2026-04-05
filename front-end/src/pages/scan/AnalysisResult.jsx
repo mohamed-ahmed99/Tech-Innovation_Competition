@@ -13,8 +13,8 @@ const AnalysisResult = ({ result, structured, onReset }) => {
         let i = 0;
         setDisplayedText('');
         setIsTyping(true);
-        
-        const baseSpeed = 20; 
+
+        const baseSpeed = 20;
         const speed = result.length > 500 ? 10 : baseSpeed;
 
         const typingInterval = setInterval(() => {
@@ -29,7 +29,7 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                 setIsTyping(false);
             }
         }, speed);
-        
+
         return () => clearInterval(typingInterval);
     }, [result]);
 
@@ -222,14 +222,14 @@ const AnalysisResult = ({ result, structured, onReset }) => {
     };
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             className="w-full max-w-3xl mx-auto mt-4"
         >
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-lg flex flex-col">
-                
+
                 {/* Header */}
                 <div className="bg-zinc-950/50 px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-zinc-100">
@@ -238,7 +238,7 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                     </div>
 
                     {!isTyping && (
-                        <button 
+                        <button
                             onClick={handleCopy}
                             className={`p-1.5 rounded-md transition-colors flex items-center gap-2 text-xs font-medium ${isCopied ? 'bg-zinc-800 text-green-400' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                         >
@@ -247,9 +247,9 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                         </button>
                     )}
                 </div>
-                
+
                 {/* Content */}
-                <div 
+                <div
                     ref={containerRef}
                     className="p-5 sm:p-6"
                 >
@@ -332,7 +332,7 @@ const AnalysisResult = ({ result, structured, onReset }) => {
 
                     <p className="mt-4 text-xs text-zinc-500 leading-relaxed">{disclaimer}</p>
                 </div>
-                
+
                 {/* Footer Actions */}
                 <AnimatePresence>
                     {!isTyping && (

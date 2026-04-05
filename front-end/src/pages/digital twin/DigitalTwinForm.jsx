@@ -44,7 +44,7 @@ const DigitalTwinForm = () => {
             ...prev,
             [name]: value
         }));
-        
+
         // Clear error when field changes
         if (errors[name]) {
             setErrors(prev => ({
@@ -61,7 +61,7 @@ const DigitalTwinForm = () => {
                 symptoms: [...prev.symptoms, currentSymptom.trim()]
             }));
             setCurrentSymptom('');
-            
+
             // Clear symptom error if any
             if (errors.symptoms) {
                 setErrors(prev => ({
@@ -81,21 +81,21 @@ const DigitalTwinForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const { isValid, errors: validationErrors } = validateDigitalTwinData(formData);
-        
+
         if (!isValid) {
             setErrors(validationErrors);
             return;
         }
 
         console.log('Form Data Ready for Server:', formData);
-        
+
         // http://localhost:5150/api/ai/digital-twin
         // https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin
         await postData("https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin", {}, formData);
     };
-    console.log({data_p, status_p, message_p, loading_p});
+    console.log({ data_p, status_p, message_p, loading_p });
 
     const genderOptions = [
         { label: 'Male', value: 'male' },
@@ -228,10 +228,10 @@ const DigitalTwinForm = () => {
                             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddSymptom())}
                             error={errors.symptoms}
                         />
-                        <Button 
-                            type="button" 
-                            variant="secondary" 
-                            size="md" 
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="md"
                             onClick={handleAddSymptom}
                             className="h-[50px] px-6 min-w-[80px]"
                         >
@@ -244,13 +244,13 @@ const DigitalTwinForm = () => {
             {/* Symptoms Tags */}
             <div className="flex flex-wrap gap-2 mt-1 sm:mt-2">
                 {formData.symptoms.map((symptom, index) => (
-                    <span 
-                        key={index} 
+                    <span
+                        key={index}
                         className="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 text-zinc-200 rounded-full text-sm border border-zinc-700"
                     >
                         {symptom}
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             onClick={() => handleRemoveSymptom(symptom)}
                             className="hover:text-red-500 transition-colors"
                         >
@@ -261,9 +261,9 @@ const DigitalTwinForm = () => {
             </div>
 
             <div className="pt-2 sm:pt-4 mt-2 sm:mt-6 border-t border-zinc-800">
-                <Button 
-                    type="submit" 
-                    variant="primary" 
+                <Button
+                    type="submit"
+                    variant="primary"
                     width="full"
                 >
                     Send
