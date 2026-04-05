@@ -262,10 +262,9 @@ export default function Simulation3DPage() {
                     <section className="viewer-card">
                         <div className="viewer-card__head">
                             <div>
-                                <h2>Cinematic Brain Twin</h2>
+                                <h2>Stylized Anatomical Twin</h2>
                                 <p>
-                                    Includes real-time anatomy view, treatment effect overlays, uncertainty halo,
-                                    dose heatmap, and focused lobe labels.
+                                    Treatment particles and energy fields in a stylized anatomical model.
                                 </p>
                             </div>
                             <span className="badge">{compareMode ? 'Comparison Mode' : TREATMENTS[treatment].label}</span>
