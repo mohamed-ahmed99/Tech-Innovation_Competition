@@ -190,6 +190,26 @@ function SceneCore({
     const metrics = useMemo(() => computeSimulation(treatment, intensity), [treatment, intensity]);
     const tumorPosition = useMemo(() => getTumorPosition(tumorLocation, laterality), [tumorLocation, laterality]);
     const activeLobe = useMemo(() => getActiveLobeKey(tumorLocation, laterality), [tumorLocation, laterality]);
+    const activeLobeLabel = useMemo(() => {
+        if (activeLobe === 'deep-core') return 'Deep Core';
+        return activeLobe
+            .split('-')
+            .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+            .join(' ');
+    }, [activeLobe]);
+    const visibleLabels = useMemo(() => {
+        if (activeLobe === 'deep-core') {
+            return LOBE_LABELS_3D.filter((label) => label.key === 'deep-core');
+        }
+
+        const [side, region] = activeLobe.split('-');
+        const oppositeSide = side === 'left' ? 'right' : 'left';
+        const oppositeKey = `${oppositeSide}-${region}`;
+
+        return LOBE_LABELS_3D.filter(
+            (label) => label.key === activeLobe || label.key === oppositeKey
+        );
+    }, [activeLobe]);
 
     const progressRatio = progress / 100;
     const doseStrength = clamp((intensity / 100) * (0.35 + progressRatio * 0.65), 0.15, 1);
@@ -378,9 +398,9 @@ function SceneCore({
 
                 {sliceEnabled && <CutPlane axis={sliceAxis} offset={sliceOffset} />}
 
-                {LOBE_LABELS_3D.map((label) => (
+                {visibleLabels.map((label) => (
                     <Html key={label.key} position={label.position} distanceFactor={compact ? 11 : 9} transform={false}>
-                        <span className={`brain-lobe-tag ${activeLobe === label.key ? 'brain-lobe-tag--active' : ''}`}>
+                        <span className={`brain-lobe-tag ${activeLobe === label.key ? 'brain-lobe-tag--active' : 'brain-lobe-tag--muted'}`}>
                             {label.label}
                         </span>
                     </Html>
@@ -389,7 +409,7 @@ function SceneCore({
                 <Html position={[tumorPosition[0], tumorPosition[1] + 0.2, tumorPosition[2]]} center distanceFactor={compact ? 10 : 8}>
                     <div className={`brain-pin ${progress > 0 ? 'brain-pin--active' : ''}`}>
                         <span className="brain-pin__dot" />
-                        <span className="brain-pin__label">{activeLobe === 'deep-core' ? 'Deep Core' : activeLobe.replace('-', ' ')}</span>
+                        <span className="brain-pin__label">{activeLobeLabel}</span>
                     </div>
                 </Html>
             </group>

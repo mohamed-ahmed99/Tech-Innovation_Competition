@@ -74,11 +74,11 @@ export default function Simulation3DPage() {
                 className="simulation-page__container"
             >
                 <header className="simulation-header">
-                    <p className="simulation-header__eyebrow">Digital Twin Lab · WebGL Clinical Sandbox</p>
-                    <h1 className="simulation-header__title">3D Brain Treatment Twin</h1>
+                    <p className="simulation-header__eyebrow">Digital Twin Lab · Interactive Clinical Preview</p>
+                    <h1 className="simulation-header__title">3D Tumor Response Twin</h1>
                     <p className="simulation-header__intro">
-                        Real-time 3D scene with treatment physics, anatomical labels, cut planes, uncertainty halo,
-                        and dose heatmap. Designed as a high-fidelity decision-support visual prototype.
+                        Explore estimated tumor response in a real-time 3D brain scene with treatment effects,
+                        cut planes, uncertainty halo, and dose visualization.
                     </p>
                 </header>
 
@@ -86,7 +86,7 @@ export default function Simulation3DPage() {
                     <aside className="control-card">
                         <div className="control-card__top">
                             <h2>Simulation Controls</h2>
-                            <p>All controls update the 3D scene and treatment projections live.</p>
+                            <p>Adjust parameters to update expected treatment response instantly.</p>
                         </div>
 
                         <div className="control-group">
@@ -251,11 +251,11 @@ export default function Simulation3DPage() {
 
                         <div className="metrics-card">
                             <p className="metrics-card__title">Decision Snapshot</p>
-                            <p>Recommended: <strong>{TREATMENTS[recommended].label}</strong></p>
-                            <p>Confidence: <strong>{Math.round(confidence * 100)}%</strong></p>
-                            <p>Current Reduction: <strong>{toPercent(selectedMetrics.reduction)}</strong></p>
-                            <p>Current Risk: <strong>{selectedMetrics.risk.toFixed(2)}</strong></p>
-                            <p>Current Success: <strong>{selectedMetrics.success.toFixed(2)}</strong></p>
+                            <p>Recommended Plan: <strong>{TREATMENTS[recommended].label}</strong></p>
+                            <p>Model Confidence: <strong>{Math.round(confidence * 100)}%</strong></p>
+                            <p>Estimated Reduction: <strong>{toPercent(selectedMetrics.reduction)}</strong></p>
+                            <p>Estimated Risk: <strong>{selectedMetrics.risk.toFixed(2)}</strong></p>
+                            <p>Estimated Success: <strong>{selectedMetrics.success.toFixed(2)}</strong></p>
                         </div>
                     </aside>
 
@@ -264,8 +264,8 @@ export default function Simulation3DPage() {
                             <div>
                                 <h2>Cinematic Brain Twin</h2>
                                 <p>
-                                    Includes: real 3D mesh, cut-planes, uncertainty halo, treatment physics, dose heatmap,
-                                    and anatomical labels.
+                                    Includes real-time anatomy view, treatment effect overlays, uncertainty halo,
+                                    dose heatmap, and focused lobe labels.
                                 </p>
                             </div>
                             <span className="badge">{compareMode ? 'Comparison Mode' : TREATMENTS[treatment].label}</span>
