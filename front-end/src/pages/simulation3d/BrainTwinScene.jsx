@@ -215,8 +215,8 @@ function SceneCore({
     const doseStrength = clamp((intensity / 100) * (0.35 + progressRatio * 0.65), 0.15, 1);
 
     const uncertainty = clamp(1 - confidence, 0.03, 0.85);
-    const tumorScale = clamp(0.5 - metrics.reduction * progressRatio * 0.32, 0.12, 0.5);
-    const edemaScale = clamp(0.85 - metrics.reduction * progressRatio * 0.48, 0.18, 0.85);
+    const tumorScale = 0.24;
+    const edemaScale = 0.44;
 
     const healthyExposure = clamp(metrics.risk * 0.72 + doseStrength * 0.25, 0, 1);
     const tissueColor = useMemo(() => {
@@ -266,6 +266,8 @@ function SceneCore({
                         metalness={0.06}
                         emissive="#1e293b"
                         emissiveIntensity={0.25 + healthyExposure * 0.24}
+                        transparent
+                        opacity={0.48}
                         clippingPlanes={clippingPlanes}
                     />
                 </mesh>
@@ -283,6 +285,8 @@ function SceneCore({
                         metalness={0.06}
                         emissive="#1e293b"
                         emissiveIntensity={0.25 + healthyExposure * 0.24}
+                        transparent
+                        opacity={0.48}
                         clippingPlanes={clippingPlanes}
                     />
                 </mesh>
@@ -318,11 +322,11 @@ function SceneCore({
                 <mesh position={tumorPosition} scale={[edemaScale, edemaScale, edemaScale]}>
                     <sphereGeometry args={[0.5, 40, 40]} />
                     <meshStandardMaterial
-                        color={treatmentColor}
+                        color="#f97316"
                         transparent
-                        opacity={0.12 + (1 - metrics.reduction * progressRatio) * 0.22}
-                        emissive={treatmentColor}
-                        emissiveIntensity={0.2 + doseStrength * 0.55}
+                        opacity={0.22}
+                        emissive="#fb923c"
+                        emissiveIntensity={0.55}
                         clippingPlanes={clippingPlanes}
                     />
                 </mesh>
@@ -330,24 +334,34 @@ function SceneCore({
                 <mesh position={tumorPosition} scale={[tumorScale + 0.28, tumorScale + 0.28, tumorScale + 0.28]}>
                     <sphereGeometry args={[0.5, 32, 32]} />
                     <meshStandardMaterial
-                        color={treatmentColor}
+                        color="#fb923c"
                         transparent
-                        opacity={0.12 + doseStrength * 0.26}
-                        emissive={treatmentColor}
-                        emissiveIntensity={0.52 + doseStrength * 0.6}
+                        opacity={0.3}
+                        emissive="#f97316"
+                        emissiveIntensity={0.75}
                         clippingPlanes={clippingPlanes}
                     />
                 </mesh>
 
                 <mesh position={tumorPosition} scale={[tumorScale, tumorScale, tumorScale]} castShadow>
-                    <sphereGeometry args={[0.5, 48, 48]} />
+                    <sphereGeometry args={[0.5, 56, 56]} />
                     <meshStandardMaterial
-                        color="#fca5a5"
-                        emissive={treatmentColor}
-                        emissiveIntensity={0.45 + doseStrength * 0.45}
-                        roughness={0.3}
-                        metalness={0.12}
+                        color="#fee2e2"
+                        emissive="#f97316"
+                        emissiveIntensity={1.05}
+                        roughness={0.22}
+                        metalness={0.08}
                         clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh position={tumorPosition} scale={[tumorScale + 0.07, tumorScale + 0.07, tumorScale + 0.07]}>
+                    <sphereGeometry args={[0.5, 40, 40]} />
+                    <meshBasicMaterial
+                        color="#fff7ed"
+                        transparent
+                        opacity={0.18}
+                        blending={THREE.AdditiveBlending}
                     />
                 </mesh>
 
@@ -365,7 +379,7 @@ function SceneCore({
                 </mesh>
 
                 {treatment === 'surgery' && (
-                    <mesh position={tumorPosition} scale={[0.12 + progressRatio * 0.45, 0.12 + progressRatio * 0.45, 0.12 + progressRatio * 0.45]}>
+                    <mesh position={tumorPosition} scale={[0.34, 0.34, 0.34]}>
                         <sphereGeometry args={[0.52, 30, 30]} />
                         <meshStandardMaterial
                             color="#020617"
@@ -430,8 +444,7 @@ function SceneCore({
                 maxDistance={6.1}
                 enableDamping
                 dampingFactor={0.09}
-                autoRotate
-                autoRotateSpeed={compact ? 0.34 : 0.26}
+                autoRotate={false}
                 maxPolarAngle={Math.PI * 0.68}
                 minPolarAngle={Math.PI * 0.32}
             />
