@@ -24,7 +24,7 @@ export default function Simulation3DPage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [compareMode, setCompareMode] = useState(false);
 
-    const [sliceEnabled, setSliceEnabled] = useState(true);
+    const [sliceEnabled, setSliceEnabled] = useState(false);
     const [sliceAxis, setSliceAxis] = useState('axial');
     const [sliceSlider, setSliceSlider] = useState(0);
 

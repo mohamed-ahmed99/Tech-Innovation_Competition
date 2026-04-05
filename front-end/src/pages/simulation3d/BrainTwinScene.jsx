@@ -36,13 +36,15 @@ function HemisphereShell({ xOffset, tint, clippingPlanes }) {
                     color={tint}
                     roughness={0.18}
                     metalness={0.02}
-                    transmission={0.52}
-                    thickness={0.35}
+                    transmission={0.26}
+                    thickness={0.48}
                     ior={1.16}
                     clearcoat={0.55}
                     clearcoatRoughness={0.2}
                     transparent
-                    opacity={0.22}
+                    opacity={0.4}
+                    emissive="#93c5fd"
+                    emissiveIntensity={0.14}
                     clippingPlanes={clippingPlanes}
                 />
             </mesh>
@@ -53,7 +55,7 @@ function HemisphereShell({ xOffset, tint, clippingPlanes }) {
                     color="#7dd3fc"
                     wireframe
                     transparent
-                    opacity={0.07}
+                    opacity={0.16}
                     clippingPlanes={clippingPlanes}
                 />
             </mesh>
@@ -63,8 +65,28 @@ function HemisphereShell({ xOffset, tint, clippingPlanes }) {
                 <meshBasicMaterial
                     color="#e2e8f0"
                     transparent
-                    opacity={0.05}
+                    opacity={0.13}
                     side={THREE.BackSide}
+                    clippingPlanes={clippingPlanes}
+                />
+            </mesh>
+
+            <mesh position={[0, 0.01, 0.39]} scale={[1.08, 0.74, 1]}>
+                <ringGeometry args={[0.62, 0.66, 120]} />
+                <meshBasicMaterial
+                    color="#c7d2fe"
+                    transparent
+                    opacity={0.22}
+                    clippingPlanes={clippingPlanes}
+                />
+            </mesh>
+
+            <mesh position={[0, -0.09, 0.32]} scale={[0.99, 0.66, 1]}>
+                <ringGeometry args={[0.55, 0.58, 120]} />
+                <meshBasicMaterial
+                    color="#93c5fd"
+                    transparent
+                    opacity={0.15}
                     clippingPlanes={clippingPlanes}
                 />
             </mesh>
@@ -419,7 +441,7 @@ function SceneCore({
                 <meshBasicMaterial color={focusColor} transparent opacity={0.15} blending={THREE.AdditiveBlending} />
             </mesh>
 
-            <group position={[0, 0.03, 0]}>
+            <group position={[0, 0.03, 0.06]}>
                 <HemisphereShell xOffset={-0.6} tint="#8ea7cb" clippingPlanes={clippingPlanes} />
                 <HemisphereShell xOffset={0.6} tint="#95aecd" clippingPlanes={clippingPlanes} />
 
@@ -443,6 +465,11 @@ function SceneCore({
                 <mesh position={[0, -0.16, 0.24]}>
                     <boxGeometry args={[2.25, 0.025, 0.03]} />
                     <meshBasicMaterial color="#7dd3fc" transparent opacity={0.08} clippingPlanes={clippingPlanes} />
+                </mesh>
+
+                <mesh position={[0, 0.02, 0.39]} scale={[1.92, 0.78, 1]}>
+                    <ringGeometry args={[0.63, 0.66, 140]} />
+                    <meshBasicMaterial color="#bfdbfe" transparent opacity={0.16} clippingPlanes={clippingPlanes} />
                 </mesh>
 
                 <EnergyBands xOffset={-0.6} color="#67e8f9" intensity={doseStrength} clippingPlanes={clippingPlanes} />
