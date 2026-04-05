@@ -27,15 +27,7 @@ export default function MobileMenu({ navLinks, isOpen, onClose, isUserAuthentica
                         ))}
 
                         <div className="mt-2 pt-4 border-t border-zinc-900">
-                            {isUserAuthenticated ? (
-                                <button
-                                    onClick={onLogout}
-                                    className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200 text-sm font-semibold active:scale-95 transition-transform"
-                                >
-                                    <LogOut size={18} className="text-zinc-500" />
-                                    Logout
-                                </button>
-                            ) : (
+                            {isUserAuthenticated ? null : (
                                 <Link
                                     to="/auth/login"
                                     onClick={onClose}

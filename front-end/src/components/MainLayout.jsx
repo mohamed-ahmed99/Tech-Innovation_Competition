@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useGlobalData } from '../hooks/useGlobalData';
 import Navbar from './navbar/Navbar';
-import Sidebar from '../pages/home/Sidebar';
+import Sidebar from '../pages/scan/Sidebar';
 import { useLocation } from 'react-router-dom';
 
 export default function MainLayout() {
@@ -22,6 +22,9 @@ export default function MainLayout() {
         setGlobalData('triggerNewChat', Date.now());
     };
 
+
+    const pagesHasSidebar = ['/', '/scan', '/digital-twin'];
+
     return (
         <div className="h-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
 
@@ -33,7 +36,7 @@ export default function MainLayout() {
 
             {/* Main Content */}
             <div className="flex flex-1 overflow-hidden relative">
-                {user && (location.pathname === '/scan' || location.pathname === '/digital-twin') && (
+                {user && (pagesHasSidebar.includes(location.pathname)) && (
                     <Sidebar
                         isMobileOpen={isSidebarOpen}
                         onClose={() => setIsSidebarOpen(false)}

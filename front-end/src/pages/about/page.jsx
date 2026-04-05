@@ -2,7 +2,7 @@ import React from 'react';
 import TeamSection from './TeamSection';
 import ProjectVision from './ProjectVision';
 
-function HomePage() {
+function AboutPage() {
     return (
         <div className="bg-zinc-950 min-h-screen">
             <ProjectVision />
@@ -12,4 +12,4 @@ function HomePage() {
 }
 
 
-export default HomePage;
+export default AboutPage;
