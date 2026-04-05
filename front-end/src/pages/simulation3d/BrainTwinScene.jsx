@@ -27,6 +27,33 @@ const LABEL_POINTS = [
 
 const RING_RADII = [0.14, 0.21, 0.28, 0.35, 0.42];
 
+const TUMOR_RESPONSE_PROFILES = {
+    surgery: {
+        startRadius: 0.36,
+        minRadius: 0.08,
+        shrinkCurve: 0.58,
+        edemaStart: 0.56,
+        edemaMin: 0.2,
+        edemaWeight: 0.74,
+    },
+    radiation: {
+        startRadius: 0.33,
+        minRadius: 0.12,
+        shrinkCurve: 0.96,
+        edemaStart: 0.52,
+        edemaMin: 0.23,
+        edemaWeight: 0.64,
+    },
+    chemotherapy: {
+        startRadius: 0.31,
+        minRadius: 0.17,
+        shrinkCurve: 1.32,
+        edemaStart: 0.49,
+        edemaMin: 0.27,
+        edemaWeight: 0.52,
+    },
+};
+
 function HemisphereShell({ xOffset, tint, clippingPlanes }) {
     return (
         <group position={[xOffset, 0.02, 0]}>
@@ -176,9 +203,10 @@ function CorticalWaves({ xOffset, color, active, clippingPlanes }) {
     );
 }
 
-function TumorPulse({ position, color, progress, clippingPlanes }) {
+function TumorPulse({ position, color, progress, radius, clippingPlanes }) {
     const coreRef = useRef(null);
     const ringRefs = useRef([]);
+    const pulseScale = clamp(radius / 0.24, 0.46, 1.75);
 
     useFrame(({ clock }) => {
         const pulse = 1 + Math.sin(clock.elapsedTime * 2.8) * 0.08;
@@ -197,7 +225,7 @@ function TumorPulse({ position, color, progress, clippingPlanes }) {
     });
 
     return (
-        <group position={position}>
+        <group position={position} scale={[pulseScale, pulseScale, pulseScale]}>
             <mesh ref={coreRef}>
                 <sphereGeometry args={[0.09, 26, 26]} />
                 <meshStandardMaterial
@@ -373,8 +401,23 @@ function SceneCore({
     const doseStrength = clamp((intensity / 100) * (0.38 + progressRatio * 0.62), 0.16, 1);
     const uncertainty = clamp(1 - confidence, 0.04, 0.78);
 
-    const tumorRadius = clamp(0.22 - metrics.reduction * progressRatio * 0.11, 0.11, 0.22);
-    const edemaRadius = clamp(tumorRadius + 0.13 + uncertainty * 0.09, 0.19, 0.37);
+    const responseProfile = TUMOR_RESPONSE_PROFILES[treatment] || TUMOR_RESPONSE_PROFILES.surgery;
+    const progressDrivenResponse = Math.pow(progressRatio, responseProfile.shrinkCurve);
+    const biologicalResponse = clamp(metrics.reduction * (0.72 + doseStrength * 0.44), 0.12, 0.95);
+    const shrinkAmount = clamp(progressDrivenResponse * biologicalResponse, 0, 0.95);
+
+    const tumorRadius = clamp(
+        responseProfile.startRadius * (1 - shrinkAmount),
+        responseProfile.minRadius,
+        responseProfile.startRadius
+    );
+
+    const edemaStart = responseProfile.edemaStart + uncertainty * 0.09;
+    const edemaRadius = clamp(
+        edemaStart * (1 - shrinkAmount * responseProfile.edemaWeight),
+        responseProfile.edemaMin + uncertainty * 0.06,
+        edemaStart
+    );
 
     const treatmentColor = TREATMENTS[treatment].color;
     const focusColor = useMemo(() => {
@@ -498,6 +541,7 @@ function SceneCore({
                     position={tumorPosition}
                     color={focusColor}
                     progress={progressRatio}
+                    radius={tumorRadius}
                     clippingPlanes={clippingPlanes}
                 />
 
