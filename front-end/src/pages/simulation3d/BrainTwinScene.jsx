@@ -113,7 +113,8 @@ function EnergyBands({ xOffset, color, intensity, clippingPlanes }) {
         barRefs.current.forEach((bar, idx) => {
             if (!bar) return;
             const wave = 0.56 + Math.sin(clock.elapsedTime * 1.7 + bars[idx].phase) * 0.44;
-            bar.material.opacity = clamp(0.04 + wave * (0.05 + intensity * 0.12), 0.04, 0.22);
+            // `bar` is the material instance itself, so update opacity directly.
+            bar.opacity = clamp(0.06 + wave * (0.08 + intensity * 0.14), 0.06, 0.3);
         });
     });
 
@@ -465,6 +466,11 @@ function SceneCore({
                 <mesh position={[0, -0.16, 0.24]}>
                     <boxGeometry args={[2.25, 0.025, 0.03]} />
                     <meshBasicMaterial color="#7dd3fc" transparent opacity={0.08} clippingPlanes={clippingPlanes} />
+                </mesh>
+
+                <mesh position={[0, -0.03, 0.18]} scale={[2.18, 1.08, 1]}>
+                    <circleGeometry args={[0.66, 120]} />
+                    <meshBasicMaterial color="#93c5fd" transparent opacity={0.08} blending={THREE.AdditiveBlending} />
                 </mesh>
 
                 <mesh position={[0, 0.02, 0.39]} scale={[1.92, 0.78, 1]}>
