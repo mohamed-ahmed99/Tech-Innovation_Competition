@@ -14,14 +14,14 @@ import {
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 const LABEL_POINTS = [
-    { key: 'left-frontal', label: 'L FRONTAL', position: [-0.95, 0.54, 0.76] },
-    { key: 'right-frontal', label: 'R FRONTAL', position: [0.95, 0.54, 0.76] },
-    { key: 'left-temporal', label: 'L TEMPORAL', position: [-1.03, -0.24, 0.72] },
-    { key: 'right-temporal', label: 'R TEMPORAL', position: [1.03, -0.24, 0.72] },
-    { key: 'left-occipital', label: 'L OCCIPITAL', position: [-1.08, 0.06, 0.65] },
-    { key: 'right-occipital', label: 'R OCCIPITAL', position: [1.12, 0.02, 0.62] },
-    { key: 'left-parietal', label: 'L PARIETAL', position: [-0.84, 0.26, 0.66] },
-    { key: 'right-parietal', label: 'R PARIETAL', position: [0.84, 0.26, 0.66] },
+    { key: 'left-frontal', label: 'L FRONTAL', position: [-1.34, 0.64, 0.84] },
+    { key: 'right-frontal', label: 'R FRONTAL', position: [1.34, 0.64, 0.84] },
+    { key: 'left-temporal', label: 'L TEMPORAL', position: [-1.42, -0.34, 0.84] },
+    { key: 'right-temporal', label: 'R TEMPORAL', position: [1.42, -0.34, 0.84] },
+    { key: 'left-occipital', label: 'L OCCIPITAL', position: [-1.46, 0.06, 0.8] },
+    { key: 'right-occipital', label: 'R OCCIPITAL', position: [1.46, 0.06, 0.8] },
+    { key: 'left-parietal', label: 'L PARIETAL', position: [-1.18, 0.3, 0.82] },
+    { key: 'right-parietal', label: 'R PARIETAL', position: [1.18, 0.3, 0.82] },
     { key: 'deep-core', label: 'DEEP CORE', position: [0, 0.07, 0.68] },
 ];
 
@@ -344,13 +344,6 @@ function CutPlane({ axis, offset }) {
     );
 }
 
-function toAnchorLabel(activeLobe) {
-    if (activeLobe === 'deep-core') return 'DEEP CORE';
-
-    const [side, region] = activeLobe.split('-');
-    return `${side.toUpperCase()} ${region.toUpperCase()}`;
-}
-
 function SceneCore({
     treatment,
     intensity,
@@ -391,11 +384,6 @@ function SceneCore({
 
     const focusX = tumorLocation === 'deep' ? 0 : laterality === 'left' ? -0.56 : 0.56;
 
-    const anchorPosition = useMemo(() => {
-        if (activeLobe === 'deep-core') return [0, 0.08, 0.8];
-        return [focusX * 0.58, 0.08, 0.8];
-    }, [activeLobe, focusX]);
-
     const visibleLabelKeys = useMemo(() => {
         const keys = laterality === 'right'
             ? ['left-frontal', 'right-frontal', 'left-occipital', 'left-temporal', 'right-temporal']
@@ -433,13 +421,13 @@ function SceneCore({
             <pointLight position={[-2.4, 1.4, 1.6]} intensity={0.35} color="#38bdf8" />
             <pointLight position={[2.35, 1.15, 1.5]} intensity={0.5} color={focusColor} />
 
-            <mesh position={[-0.95, 0.15, -0.58]} scale={[1.7, 1.2, 1]}>
+            <mesh position={[-0.95, 0.15, -0.58]} scale={[1.38, 1.0, 1]}>
                 <circleGeometry args={[0.75, 80]} />
-                <meshBasicMaterial color="#38bdf8" transparent opacity={0.09} blending={THREE.AdditiveBlending} />
+                <meshBasicMaterial color="#38bdf8" transparent opacity={0.045} blending={THREE.AdditiveBlending} />
             </mesh>
-            <mesh position={[0.98, 0.02, -0.56]} scale={[1.85, 1.3, 1]}>
+            <mesh position={[0.98, 0.02, -0.56]} scale={[1.44, 1.05, 1]}>
                 <circleGeometry args={[0.8, 80]} />
-                <meshBasicMaterial color={focusColor} transparent opacity={0.15} blending={THREE.AdditiveBlending} />
+                <meshBasicMaterial color={focusColor} transparent opacity={0.09} blending={THREE.AdditiveBlending} />
             </mesh>
 
             <group position={[0, 0.03, 0.06]}>
@@ -449,18 +437,6 @@ function SceneCore({
                 <mesh position={[0, 0.01, 0.25]}>
                     <capsuleGeometry args={[0.03, 0.76, 4, 10]} />
                     <meshBasicMaterial color="#93c5fd" transparent opacity={0.14} clippingPlanes={clippingPlanes} />
-                </mesh>
-
-                <mesh position={[0, -0.9, 0.08]} rotation={[Math.PI / 2.45, 0, 0]}>
-                    <capsuleGeometry args={[0.11, 0.56, 8, 16]} />
-                    <meshStandardMaterial
-                        color="#93a8c7"
-                        roughness={0.55}
-                        metalness={0.03}
-                        emissive="#1e293b"
-                        emissiveIntensity={0.24}
-                        clippingPlanes={clippingPlanes}
-                    />
                 </mesh>
 
                 <mesh position={[0, -0.16, 0.24]}>
@@ -565,7 +541,7 @@ function SceneCore({
                 {sliceEnabled && <CutPlane axis={sliceAxis} offset={sliceOffset} />}
 
                 {!compact && visibleLabels.map((label) => (
-                    <Html key={label.key} position={label.position} distanceFactor={8.4} center>
+                    <Html key={label.key} position={label.position} transform={false} center>
                         <span className={`brain-lobe-tag ${label.key === activeLobe ? 'brain-lobe-tag--active' : 'brain-lobe-tag--muted'}`}>
                             {label.label}
                         </span>
@@ -574,13 +550,9 @@ function SceneCore({
 
                 {!compact && (
                     <>
-                        <Html position={anchorPosition} distanceFactor={8.2} center>
-                            <span className="brain-lobe-anchor">{toAnchorLabel(activeLobe)}</span>
-                        </Html>
-
                         <Html
                             position={[tumorPosition[0] + 0.01, tumorPosition[1], tumorPosition[2] + 0.28]}
-                            distanceFactor={7.8}
+                            transform={false}
                             center
                         >
                             <div className={`brain-pin ${progress > 0 ? 'brain-pin--active' : ''}`}>
