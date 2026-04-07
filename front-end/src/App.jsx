@@ -1,3 +1,4 @@
+// react
 import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ScanPage from './pages/scan/page';
@@ -8,7 +9,20 @@ import VerifyEmail from './pages/auth/VerifyEmail';
 import { useGlobalData } from './hooks/useGlobalData';
 import { useGetMethod } from './hooks/useGetMethod';
 import Loading from './components/Loading';
+
+
+// layouts
 import MainLayout from './components/MainLayout';
+import AuthLayout from './pages/auth/AuthLayout';
+
+// authenticated pages
+import LogIn from './pages/auth/LogIn';
+import SignUp from './pages/auth/SignUp';
+import VerifyEmail from './pages/auth/VerifyEmail'
+
+
+// main pages
+import ScanPage from './pages/scan/page';
 import AboutPage from './pages/about/page';
 import DigitalTwinPage from './pages/digital twin/page';
 import Treatment3DPage from './pages/treatment3d/page';
@@ -25,13 +39,18 @@ function App() {
     const verifyUser = async () => {
       if (token) {
         // Uses Vercel proxy rewrite to reach the DigitalOcean backend
-        await getData("/api/auth/verify-me");
+
+        // http://localhost:5150/api/auth/verify-me
+        // https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me
+        await getData("https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-me");
       } else {
         setGlobalData("user", null);
       }
     }
     verifyUser();
   }, []);
+
+  console.log({ data_g, status_g, loading_g, store });
 
   useEffect(() => {
     if (status_g === "success") {
@@ -53,12 +72,7 @@ function App() {
     <Router>
       <Routes>
 
-        {/* Authentication Pages */}
-        <Route element={<AuthLayout />} >
-          <Route path="/auth/sign-up" element={<SignUp />} />
-          <Route path="/auth/login" element={<LogIn />} />
-          <Route path="/auth/verify-email" element={<VerifyEmail />} />
-        </Route>
+        {/* Home page */}
 
         {/* Main pages */}
         <Route element={<MainLayout />} >

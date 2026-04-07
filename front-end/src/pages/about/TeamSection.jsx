@@ -1,9 +1,31 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Github, Linkedin, Mail } from 'lucide-react';
+import { Github, Linkedin, Mail, Facebook } from 'lucide-react';
 
 const TeamSection = () => {
     const team = [
+        // Engy Kaoud
+        {
+            name: "Engy Kaoud",
+            role: "Researcher",
+            image: "./team_photos/Injy.jpg",
+            socials: [
+                {
+                    name: "email",
+                    icon: <Mail size={18} strokeWidth={1.5} />,
+                    url: "angykaoud@gmail.com"
+                },
+                {
+                    name: "Facebook",
+                    icon: <Facebook size={18} strokeWidth={1.5} />,
+                    url: "https://www.facebook.com/profile.php?id=61575308375504"
+                }
+            ],
+            description: "Leader and researcher passionate about science and technology, working on developing innovative ideas and transforming them into real-world solutions through research and teamwork, while leading teams to create real impact."
+        },
+
+
+        // Youssef Mohamed
         {
             name: "Youssef Mohamed",
             role: "AI Developer",
@@ -11,61 +33,68 @@ const TeamSection = () => {
             socials: [
                 {
                     name: "Github",
-                    url: "https://github.com/youssef-mohamed"
-                },
-                {
-                    name: "Linkedin",
-                    url: "https://www.linkedin.com/in/youssef-mohamed/"
+                    icon: <Github size={18} strokeWidth={1.5} />,
+                    url: "https://github.com/YusufMohamed-tech"
                 }
-            ]
+            ],
+            description: ""
         },
         {
             name: "Mohamed Ahmed",
-            role: "Full-Stack Developer",
-            image: "",
+            role: "Full-Stack Web Developer",
+            image: "./team_photos/Mohamed.jpg",
             socials: [
                 {
                     name: "Github",
+                    icon: <Github size={18} strokeWidth={1.5} />,
                     url: "https://github.com/mohamed-ahmed99"
                 },
                 {
-                    name: "Linkedin",
-                    url: "https://www.linkedin.com/in/mohamed-ahmed/"
+                    name: "Facebook",
+                    icon: <Facebook size={18} strokeWidth={1.5} />,
+                    url: "https://www.facebook.com/mohamed.ahmed.459624/"
                 }
-            ]
+            ],
+            description: "A student passionate about programming and scientific research, specializing in web development and problem-solving, always striving to transform ideas into innovative technological solutions."
         },
-        {
-            name: "Engy Kaoud",
-            role: "Researcher",
-            image: "",
-            socials: [
-                {
-                    name: "Github",
-                    url: "https://github.com/engy-kaoud"
-                }
-            ]
-        },
+
         {
             name: "Reda",
-            role: "Backend Developer",
-            image: "",
+            role: "Full-Stack Web Developer",
+            image: "./team_photos/Reda.jpg",
             socials: [
                 {
                     name: "Github",
-                    url: "https://github.com/reda"
+                    icon: <Github size={18} strokeWidth={1.5} />,
+                    url: "https://github.com/reda445566"
+                }
+            ],
+            description: ""
+        },
+        {
+            name: "Jana Mohamed",
+            role: "Mobile Application Developer",
+            image: "./team_photos/Jana.jpg",
+            socials: [
+                {
+                    name: "linkedin",
+                    icon: <Linkedin size={18} strokeWidth={1.5} />,
+                    url: "https://www.linkedin.com/in/jana-mohamed-832199373?utm_source=share_via&utm_content=profile&utm_medium=member_android"
                 },
                 {
-                    name: "Linkedin",
-                    url: "https://www.linkedin.com/in/reda/"
+                    name: "Facebook",
+                    icon: <Facebook size={18} strokeWidth={1.5} />,
+                    url: "https://www.facebook.com/share/1BSU9nBmtU/"
                 }
-            ]
+            ],
+            description: ""
         },
     ];
 
     return (
         <section className="py-12 px-6 md:px-12 bg-zinc-950 text-white selection:bg-white selection:text-black">
             <div className="max-w-7xl mx-auto">
-                <motion.h2 
+                <motion.h2
                     initial={{ opacity: 0, y: -20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -85,10 +114,10 @@ const TeamSection = () => {
                             className="flex flex-col group"
                         >
                             {/* Image - Top */}
-                            <div className="relative aspect-square overflow-hidden rounded-2xl bg-zinc-900 mb-4 border border-zinc-800 transition-all duration-500 group-hover:border-zinc-500 flex items-center justify-center">
+                            <div className="relative aspect-square overflow-hidden rounded-2xl bg-zinc-900 mb-4 border border-zinc-800 transition-all duration-500 group-hover:border-zinc-500 flex items-center justify-center shadow-lg shadow-gray-700">
                                 {member.image ? (
-                                    <img 
-                                        src={member.image} 
+                                    <img
+                                        src={member.image}
                                         alt={member.name}
                                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
@@ -113,7 +142,7 @@ const TeamSection = () => {
                                 {/* Social Icons - Bottom */}
                                 <div className="flex gap-4 pt-1">
                                     {member.socials.map((social, sIdx) => (
-                                        <a 
+                                        <a
                                             key={sIdx}
                                             href={social.url}
                                             target="_blank"
@@ -121,11 +150,15 @@ const TeamSection = () => {
                                             className="text-zinc-500 hover:text-white transition-all transform hover:scale-110"
                                             title={social.name}
                                         >
-                                            {social.name === 'Github' && <Github size={18} strokeWidth={1.5} />}
-                                            {social.name === 'Linkedin' && <Linkedin size={18} strokeWidth={1.5} />}
+                                            {social.icon}
                                         </a>
                                     ))}
                                 </div>
+
+                                {/* Description */}
+                                <p className="text-sm text-zinc-200">
+                                    {member.description}
+                                </p>
                             </div>
                         </motion.div>
                     ))}

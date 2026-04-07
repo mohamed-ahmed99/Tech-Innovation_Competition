@@ -3,6 +3,8 @@ import multer from 'multer';
 import { analyzeImage, getHistory, getAnalysisById, deleteAnalysis } from '../controllers/ai.controller.js';
 import { checkUser } from '../middlewares/checkUser.js';
 
+import { createDigitalTwin } from '../controllers/digitalTwin.controllers.js';
+
 const router = express.Router();
 
 // Configure multer for handling file uploads (in-memory storage)
@@ -22,6 +24,18 @@ router.get('/history/:id', checkUser(), getAnalysisById);
 
 // DELETE /api/ai/history/:id    — delete a specific analysis (auth required)
 router.delete('/history/:id', checkUser(), deleteAnalysis);
+
+
+
+
+// POST /api/ai/digital-twin — create a digital twin (auth required)
+router.post('/digital-twin', createDigitalTwin);
+
+
+
+
+
+
 
 /**
  * Middleware that optionally attaches req.user if a valid token is present,
