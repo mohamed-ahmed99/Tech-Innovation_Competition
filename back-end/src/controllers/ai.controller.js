@@ -2,8 +2,7 @@ import { status } from '../config/constants.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import Analysis from '../models/analysis.model.js';
 
-const DEFAULT_DEV_AI_SERVICE_URL = 'http://localhost:8000';
-const DEFAULT_PROD_AI_SERVICE_URL = 'http://159.89.12.125:8000';
+const DIGITAL_OCEAN_AI_SERVICE_URL = 'http://159.89.12.125:8000';
 
 function normalizeBaseUrl(url) {
     return String(url || '').trim().replace(/\/+$/, '');
@@ -16,16 +15,15 @@ function resolveAiServiceUrl() {
         process.env.PYTHON_AI_URL;
 
     if (configuredUrl) {
-        return normalizeBaseUrl(configuredUrl);
+        const normalized = normalizeBaseUrl(configuredUrl);
+        // Force non-local AI target to avoid accidental localhost routing.
+        if (/localhost|127\.0\.0\.1/i.test(normalized)) {
+            return DIGITAL_OCEAN_AI_SERVICE_URL;
+        }
+        return normalized;
     }
 
-    // Keep localhost fallback for local development only.
-    if (process.env.NODE_ENV !== 'production') {
-        return DEFAULT_DEV_AI_SERVICE_URL;
-    }
-
-    // Production safety fallback for current hosted AI service.
-    return DEFAULT_PROD_AI_SERVICE_URL;
+    return DIGITAL_OCEAN_AI_SERVICE_URL;
 }
 
 function getAiRequestTimeoutMs() {
@@ -33,9 +31,22 @@ function getAiRequestTimeoutMs() {
     return Number.isFinite(timeout) && timeout > 0 ? timeout : 45000;
 }
 
+function getAiDecisionThreshold(requestThreshold) {
+    const fallback = process.env.AI_TUMOR_THRESHOLD || '0.50';
+    const raw = requestThreshold ?? fallback;
+    const parsed = Number(raw);
+
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+        return 0.5;
+    }
+
+    return Number(parsed.toFixed(4));
+}
+
 function buildAdvice(result, modality = 'mri') {
     const detected = Boolean(result?.tumor_detected ?? result?.tumorDetected);
     const confidence = Number(result?.confidence || 0);
+    const normalizedConfidence = confidence > 1 ? confidence / 100 : confidence;
     const location = result?.location || 'undetermined region';
     const organ = result?.detected_organ || result?.body_region || result?.bodyRegion || 'brain';
     const urgencyLevel = result?.urgency_level || 'routine';
@@ -98,7 +109,7 @@ function buildAdvice(result, modality = 'mri') {
     return {
         findings,
         explanation,
-        confidencePercent: Number((confidence * 100).toFixed(1)),
+        confidencePercent: Number((normalizedConfidence * 100).toFixed(1)),
         urgencyLevel,
         treatmentOptions,
         expectedOutlook,
@@ -113,7 +124,8 @@ function buildAdvice(result, modality = 'mri') {
  */
 function formatReport(result) {
     const { tumor_detected, confidence, location, bounding_box, raw_scores, modality } = result;
-    const confPct = (confidence * 100).toFixed(1);
+    const normalizedConfidence = Number(confidence) > 1 ? Number(confidence) / 100 : Number(confidence || 0);
+    const confPct = (normalizedConfidence * 100).toFixed(1);
     const advice = buildAdvice(result, modality || 'mri');
 
     if (!tumor_detected) {
@@ -204,6 +216,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
     }
 
     const modality = req.body.modality || 'mri';
+    const threshold = getAiDecisionThreshold(req.body.threshold);
 
     // Build multipart form using Node's native FormData/Blob for undici fetch compatibility.
     const form = new FormData();
@@ -216,7 +229,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
     if (req.body.organ_hint || req.body.organHint) {
         form.append('organ_hint', req.body.organ_hint || req.body.organHint);
     }
-    form.append('threshold', req.body.threshold || '0.50');
+    form.append('threshold', String(threshold));
     form.append('return_heatmap', 'false');
 
     const aiServiceUrl = resolveAiServiceUrl();
@@ -224,6 +237,8 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
     const timeoutId = setTimeout(() => controller.abort(), getAiRequestTimeoutMs());
 
     try {
+        console.info(`[AI analyze] url=${aiServiceUrl} modality=${modality} threshold=${threshold}`);
+
         const response = await fetch(`${aiServiceUrl}/api/v1/tumor/analyze`, {
             method: 'POST',
             body: form,
@@ -286,6 +301,10 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
             data: {
                 analysis: formattedReport,
                 structured: aiResultWithAdvice,
+                meta: {
+                    aiServiceUrl,
+                    threshold,
+                },
             },
         });
     } catch (err) {

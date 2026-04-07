@@ -9,8 +9,7 @@ import {
 import { computeScoreMargin, rankTreatmentSimulations } from '../utils/digitalTwin.scoring.js';
 import { validateDigitalTwinPayload } from '../utils/digitalTwin.validation.js';
 
-const DEFAULT_DEV_AI_SERVICE_URL = 'http://localhost:8000';
-const DEFAULT_PROD_AI_SERVICE_URL = 'http://159.89.12.125:8000';
+const DIGITAL_OCEAN_AI_SERVICE_URL = 'http://159.89.12.125:8000';
 const DIGITAL_TWIN_DISCLAIMER =
     'This recommendation is for clinical decision support and education only. It does not replace physician judgment.';
 
@@ -25,14 +24,14 @@ function resolveAiServiceUrl() {
         process.env.PYTHON_AI_URL;
 
     if (configuredUrl) {
-        return normalizeBaseUrl(configuredUrl);
+        const normalized = normalizeBaseUrl(configuredUrl);
+        if (/localhost|127\.0\.0\.1/i.test(normalized)) {
+            return DIGITAL_OCEAN_AI_SERVICE_URL;
+        }
+        return normalized;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-        return DEFAULT_DEV_AI_SERVICE_URL;
-    }
-
-    return DEFAULT_PROD_AI_SERVICE_URL;
+    return DIGITAL_OCEAN_AI_SERVICE_URL;
 }
 
 function getAiRequestTimeoutMs() {

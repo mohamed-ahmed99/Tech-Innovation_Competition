@@ -38,6 +38,6 @@ services:
     env_file:
       - ./back-end/.env
     environment:
-      - AI_SERVICE_URL=http://ai-service:8000
+      - AI_SERVICE_URL=http://159.89.12.125:8000
     ports:
       - "5150:5150"
