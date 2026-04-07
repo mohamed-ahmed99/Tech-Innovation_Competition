@@ -13,7 +13,6 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [user, setUser] = useState(null);
     const [, setGlobalData] = useGlobalData();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -33,11 +32,29 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
         { to: "/about-us", label: "About Us", icon: <Info size={16} /> },
     ];
 
+    const isLinkActive = (to) => {
+        const current = location.pathname;
+
+        if (to === '/about-us') {
+            return current === '/' || current === '/about-us';
+        }
+
+        if (to === '/scan') {
+            return current === '/scan' || current === '/model';
+        }
+
+        if (to === '/simulation-3d') {
+            return current === '/simulation-3d' || current === '/treatment-3d';
+        }
+
+        return current === to;
+    };
+
     return (
         <nav className="w-full h-[70px] px-6 md:px-12 flex items-center justify-between bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 sticky top-0 z-50">
             {/* Left side: Logo & Sidebar toggle on mobile */}
             <div className="flex items-center gap-3">
-                {isUserAuthenticated && location.pathname != "/about-us" ? (
+                {isUserAuthenticated && (location.pathname === '/scan' || location.pathname === '/model') ? (
                     <button
                         onClick={onToggleSidebar}
                         className="sm:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 rounded-xl transition-all"
@@ -64,23 +81,43 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
 
 
             {/* Desktop: Right side */}
-            <div className="flex items-center gap-6 md:gap-8">
+            <div className="flex items-center gap-3 md:gap-4">
 
-                {navLinks.map((link) => (
-                    <Link
-                        key={link.to}
-                        to={link.to}
-                        className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"
+                <div className="hidden sm:flex items-center gap-1 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-1.5">
+                    {navLinks.map((link) => {
+                        const active = isLinkActive(link.to);
+
+                        return (
+                            <Link
+                                key={link.to}
+                                to={link.to}
+                                className={`flex items-center gap-2 text-sm px-3.5 py-2 rounded-xl border transition-all font-medium ${
+                                    active
+                                        ? 'text-zinc-100 bg-zinc-800 border-zinc-700 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]'
+                                        : 'text-zinc-400 border-transparent hover:text-zinc-100 hover:bg-zinc-900'
+                                }`}
+                            >
+                                {link.icon}
+                                {link.label}
+                            </Link>
+                        );
+                    })}
+                </div>
+
+                {isUserAuthenticated ? (
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleLogout}
+                        className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm font-semibold transition-all hover:bg-zinc-800 hover:text-zinc-100 hover:border-zinc-700"
                     >
-                        {link.icon}
-                        {link.label}
-                    </Link>
-                ))}
-
-                {isUserAuthenticated ? null : (
+                        <LogOut size={16} />
+                        Logout
+                    </motion.button>
+                ) : (
                     <Link
                         to="/auth/login"
-                        className="hidden sm:flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-sm font-bold transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
+                        className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-sm font-bold transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
                     >
                         <LogIn size={16} />
                         Sign In
@@ -99,6 +136,7 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
             {/* Mobile Menu Component (Refined & Smaller) */}
             <MobileMenu
                 navLinks={navLinks}
+                currentPath={location.pathname}
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
                 isUserAuthenticated={isUserAuthenticated}
