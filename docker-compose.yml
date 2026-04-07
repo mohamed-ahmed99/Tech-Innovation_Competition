@@ -9,10 +9,8 @@ services:
     container_name: neuroguard-ai
     restart: unless-stopped
     environment:
-      - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/brain_best_model.pth
-      - TUMOR_CHECKPOINT_LIVER=/app/checkpoints/liver_best_model.pth
-      - TUMOR_CHECKPOINT_BREAST=/app/checkpoints/breast_best_model.pth
-      - TUMOR_CHECKPOINT=/app/checkpoints/brain_best_model.pth
+      - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/best_model.pth
+      - TUMOR_CHECKPOINT=/app/checkpoints/best_model.pth
       - TUMOR_DEVICE=cpu
       - AI_PORT=8000
       - CORS_ORIGINS=*
@@ -39,5 +37,6 @@ services:
       - ./back-end/.env
     environment:
       - AI_SERVICE_URL=http://159.89.12.125:8000
+      - AI_TUMOR_THRESHOLD=0.45
     ports:
       - "5150:5150"

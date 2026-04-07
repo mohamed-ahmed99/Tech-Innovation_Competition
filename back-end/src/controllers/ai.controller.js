@@ -32,7 +32,7 @@ function getAiRequestTimeoutMs() {
 }
 
 function getAiDecisionThreshold(requestThreshold) {
-    const fallback = process.env.AI_TUMOR_THRESHOLD || '0.50';
+    const fallback = process.env.AI_TUMOR_THRESHOLD || '0.45';
     const raw = requestThreshold ?? fallback;
     const parsed = Number(raw);
 
@@ -41,6 +41,45 @@ function getAiDecisionThreshold(requestThreshold) {
     }
 
     return Number(parsed.toFixed(4));
+}
+
+function normalizeOrganHint(value) {
+    if (!value) {
+        return '';
+    }
+
+    const key = String(value).trim().toLowerCase().replace(/[\s-]+/g, '_');
+    const aliases = {
+        brain: 'brain',
+        cerebrum: 'brain',
+        liver: 'liver',
+        hepatic: 'liver',
+        breast: 'breast',
+        mammary: 'breast',
+        spinal: 'spinal_cord',
+        spine: 'spinal_cord',
+        spinalcord: 'spinal_cord',
+        spinal_cord: 'spinal_cord',
+    };
+
+    return aliases[key] || '';
+}
+
+function resolveOrganHint(modality, requestedOrganHint) {
+    const fromRequest = normalizeOrganHint(requestedOrganHint);
+    if (fromRequest) {
+        return fromRequest;
+    }
+
+    const modalityKey = String(modality || '').trim().toLowerCase();
+    if (modalityKey === 'ct') {
+        return 'liver';
+    }
+    if (modalityKey === 'xray') {
+        return 'breast';
+    }
+
+    return 'brain';
 }
 
 function buildAdvice(result, modality = 'mri') {
@@ -217,6 +256,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
 
     const modality = req.body.modality || 'mri';
     const threshold = getAiDecisionThreshold(req.body.threshold);
+    const organHint = resolveOrganHint(modality, req.body.organ_hint || req.body.organHint);
 
     // Build multipart form using Node's native FormData/Blob for undici fetch compatibility.
     const form = new FormData();
@@ -226,9 +266,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
 
     form.append('file', fileBlob, req.file.originalname || 'scan.png');
     form.append('modality', modality);
-    if (req.body.organ_hint || req.body.organHint) {
-        form.append('organ_hint', req.body.organ_hint || req.body.organHint);
-    }
+    form.append('organ_hint', organHint);
     form.append('threshold', String(threshold));
     form.append('return_heatmap', 'false');
 
@@ -237,7 +275,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
     const timeoutId = setTimeout(() => controller.abort(), getAiRequestTimeoutMs());
 
     try {
-        console.info(`[AI analyze] url=${aiServiceUrl} modality=${modality} threshold=${threshold}`);
+        console.info(`[AI analyze] url=${aiServiceUrl} modality=${modality} organ_hint=${organHint} threshold=${threshold}`);
 
         const response = await fetch(`${aiServiceUrl}/api/v1/tumor/analyze`, {
             method: 'POST',
@@ -303,6 +341,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
                 structured: aiResultWithAdvice,
                 meta: {
                     aiServiceUrl,
+                    organHint,
                     threshold,
                 },
             },

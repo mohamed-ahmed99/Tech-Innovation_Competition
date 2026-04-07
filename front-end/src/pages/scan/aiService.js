@@ -9,6 +9,13 @@ function buildApiUrl(path) {
     return `${API_BASE}${path}`;
 }
 
+function defaultOrganHint(modality) {
+    const key = String(modality || '').trim().toLowerCase();
+    if (key === 'ct') return 'liver';
+    if (key === 'xray') return 'breast';
+    return 'brain';
+}
+
 function parseErrorMessageFromResponse(responseBody) {
     if (!responseBody) return null;
 
@@ -52,9 +59,7 @@ export const sendImageToAI = async (imageFile, modality = "mri", organHint = "")
     const formData = new FormData();
     formData.append("image", imageFile);
     formData.append("modality", modality);
-    if (organHint) {
-        formData.append("organ_hint", organHint);
-    }
+    formData.append("organ_hint", organHint || defaultOrganHint(modality));
 
     let response;
     try {

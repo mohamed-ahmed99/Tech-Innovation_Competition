@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 from inference import load_model, predict
-from model_registry import checkpoint_env_map, get_available_tumor_organs, get_tumor_checkpoint_for_organ, normalize_organ_name
+from model_registry import SUPPORTED_ORGANS, checkpoint_env_map, get_available_tumor_organs, get_tumor_checkpoint_for_organ, normalize_organ_name
 from organ_router import OrganRouter
 
 log    = logging.getLogger(__name__)
@@ -266,12 +266,28 @@ def health_check():
     """Liveness + readiness probe."""
     try:
         _get_model("brain")
+
+        configured_checkpoints = {
+            "brain": os.environ.get("TUMOR_CHECKPOINT_BRAIN") or os.environ.get("TUMOR_CHECKPOINT"),
+            "liver": os.environ.get("TUMOR_CHECKPOINT_LIVER") or os.environ.get("TUMOR_CHECKPOINT"),
+            "spinal_cord": os.environ.get("TUMOR_CHECKPOINT_SPINAL_CORD") or os.environ.get("TUMOR_CHECKPOINT"),
+            "breast": os.environ.get("TUMOR_CHECKPOINT_BREAST") or os.environ.get("TUMOR_CHECKPOINT"),
+        }
+        resolved_checkpoints = {
+            organ: get_tumor_checkpoint_for_organ(organ)
+            for organ in SUPPORTED_ORGANS
+        }
+
         return {
             "status": "ok",
             "device": str(_device),
             "model": "loaded",
+            "loaded_tumor_organs": sorted(_models.keys()),
             "available_tumor_organs": get_available_tumor_organs(),
             "organ_classifier_configured": bool(os.environ.get("ORGAN_CLASSIFIER_CHECKPOINT")),
+            "checkpoint_env_map": checkpoint_env_map(),
+            "configured_checkpoints": configured_checkpoints,
+            "resolved_checkpoints": resolved_checkpoints,
         }
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))

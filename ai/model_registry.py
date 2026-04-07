@@ -29,8 +29,7 @@ def _resolve_checkpoint(primary_env_name: str) -> Optional[str]:
     if fallback and os.path.exists(fallback):
         return fallback
 
-    # If paths do not exist, keep previous behavior of returning configured values.
-    return primary or fallback
+    return None
 
 
 def normalize_organ_name(value: Optional[str]) -> Optional[str]:

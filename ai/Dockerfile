@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Default env vars (override at runtime)
+ENV TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/best_model.pth
 ENV TUMOR_CHECKPOINT=/app/checkpoints/best_model.pth
 ENV TUMOR_DEVICE=cpu
 ENV AI_PORT=8000
