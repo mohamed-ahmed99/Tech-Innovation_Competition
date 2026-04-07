@@ -17,7 +17,6 @@ const ScanPage = () => {
     const [analysisResult, setAnalysisResult] = useState(null);
     const [structuredResult, setStructuredResult] = useState(null);
     const [selectedOrganHint, setSelectedOrganHint] = useState('brain');
-    const [digitalTwinProfile, setDigitalTwinProfile] = useState(store.digitalTwinProfile || null);
 
     // Clean up the object URL when component unmounts or selected file changes
     useEffect(() => {
@@ -51,25 +50,6 @@ const ScanPage = () => {
         }
     }, [store.triggerNewChat]);
 
-    // Load Digital Twin once so AI analysis stays personalized without forcing a new UI flow.
-    useEffect(() => {
-        if (store.digitalTwinProfile) {
-            setDigitalTwinProfile(store.digitalTwinProfile);
-            return;
-        }
-
-        const savedTwin = localStorage.getItem('NeuroGuard_DigitalTwin');
-        if (!savedTwin) return;
-
-        try {
-            const parsedTwin = JSON.parse(savedTwin);
-            setDigitalTwinProfile(parsedTwin);
-            setGlobalData('digitalTwinProfile', parsedTwin);
-        } catch {
-            // Ignore malformed cached profile.
-        }
-    }, [store.digitalTwinProfile, setGlobalData]);
-
     const handleImageSelect = (file) => {
         setSelectedFile(file);
         setAnalysisResult(null);
@@ -95,7 +75,7 @@ const ScanPage = () => {
                 breast: 'xray',
             };
             const modality = modalityByOrgan[organHint] || 'mri';
-            const result = await sendImageToAI(selectedFile, modality, organHint, digitalTwinProfile);
+            const result = await sendImageToAI(selectedFile, modality, organHint);
             setAnalysisResult(result.text);
             setStructuredResult(result.structured);
         } catch (error) {

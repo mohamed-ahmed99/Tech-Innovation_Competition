@@ -5,13 +5,11 @@ import List from '../../components/inputs/List';
 import { X } from 'lucide-react';
 import { validateDigitalTwinData } from './validation';
 import { usePostMethod } from '../../hooks/usePostMethod'
-import { useGlobalData } from '../../hooks/useGlobalData';
 
 const DigitalTwinForm = () => {
 
     // my hooks
     const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
-    const [, setGlobalData] = useGlobalData();
 
 
 
@@ -91,19 +89,11 @@ const DigitalTwinForm = () => {
             return;
         }
 
-        const normalizedFormData = {
-            ...formData,
-            age: Number(formData.age),
-            tumor_size_cm: Number(formData.tumor_size_cm),
-            performance_status: Number(formData.performance_status),
-        };
-
-        setGlobalData('digitalTwinProfile', normalizedFormData);
-        localStorage.setItem('NeuroGuard_DigitalTwin', JSON.stringify(normalizedFormData));
+        console.log('Form Data Ready for Server:', formData);
 
         // http://localhost:5150/api/ai/digital-twin
         // https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin
-        await postData("https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin", {}, normalizedFormData);
+        await postData("https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin", {}, formData);
     };
     console.log({ data_p, status_p, message_p, loading_p });
 
