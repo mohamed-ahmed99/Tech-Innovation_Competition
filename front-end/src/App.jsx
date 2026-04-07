@@ -30,7 +30,7 @@ function App() {
       }
     };
     verifyUser();
-  }, [getData, setGlobalData]);
+  }, []);
 
   useEffect(() => {
     if (status_g === "success") {
