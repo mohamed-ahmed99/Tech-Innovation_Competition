@@ -26,11 +26,6 @@ const DigitalTwinForm = () => {
         if (envBase) {
             return envBase;
         }
-
-        if (typeof window !== 'undefined' && window.location.hostname === 'neuro-gaurd.vercel.app') {
-            return 'https://neuro-gaurd-ai-backend.vercel.app';
-        }
-
         return '';
     }, []);
 
