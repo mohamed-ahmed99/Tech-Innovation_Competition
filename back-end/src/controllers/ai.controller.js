@@ -2,8 +2,12 @@ import { status } from '../config/constants.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import Analysis from '../models/analysis.model.js';
 
-// URL of the Python AI service (set via env var, default to localhost for dev)
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+// URL of the Python AI service.
+// Priority: explicit env -> public fallback host -> localhost for local dev.
+const AI_SERVICE_URL =
+    process.env.AI_SERVICE_URL ||
+    process.env.PUBLIC_AI_SERVICE_URL ||
+    'http://159.89.12.125:8000';
 
 function parseDigitalTwinProfile(rawDigitalTwin) {
     if (!rawDigitalTwin) return null;
