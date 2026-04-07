@@ -3,6 +3,7 @@ import asyncHandler from '../middlewares/asyncHandler.js';
 import Analysis from '../models/analysis.model.js';
 
 const DEFAULT_DEV_AI_SERVICE_URL = 'http://localhost:8000';
+const DEFAULT_PROD_AI_SERVICE_URL = 'http://159.89.12.125:8000';
 
 function normalizeBaseUrl(url) {
     return String(url || '').trim().replace(/\/+$/, '');
@@ -23,7 +24,8 @@ function resolveAiServiceUrl() {
         return DEFAULT_DEV_AI_SERVICE_URL;
     }
 
-    return null;
+    // Production safety fallback for current hosted AI service.
+    return DEFAULT_PROD_AI_SERVICE_URL;
 }
 
 function getAiRequestTimeoutMs() {
@@ -218,13 +220,6 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
     form.append('return_heatmap', 'false');
 
     const aiServiceUrl = resolveAiServiceUrl();
-    if (!aiServiceUrl) {
-        return res.status(500).json({
-            status: status.ERROR,
-            message: 'AI service is not configured for production. Set AI_SERVICE_URL.',
-        });
-    }
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), getAiRequestTimeoutMs());
 
