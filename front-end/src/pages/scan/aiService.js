@@ -1,6 +1,9 @@
 // Default to same-origin requests so Vercel rewrites can proxy /api/* in production.
 // For local dev or custom deployments, set VITE_API_BASE (without trailing slash).
-const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
+const API_BASE_DEV = "http://localhost:5150";
+const API_BASE_PROD = "https://neuro-gaurd-ai-backend.vercel.app";
+
+const API_BASE = window.location.hostname === 'localhost' ? API_BASE_DEV : API_BASE_PROD;
 
 function buildApiUrl(path) {
     return `${API_BASE}${path}`;
@@ -36,7 +39,9 @@ function parseErrorMessageFromResponse(responseBody) {
  */
 function authHeaders() {
     const token = localStorage.getItem("NeuroAi_Token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token ? { 
+        'Authorization': `Bearer ${token}` 
+    } : {};
 }
 
 /**
@@ -53,7 +58,7 @@ export const sendImageToAI = async (imageFile, modality = "mri", organHint = "")
 
     let response;
     try {
-        response = await fetch(buildApiUrl('/api/ai/analyze'), {
+        response = await fetch(buildApiUrl(`/api/ai/analyze`), {
             method: "POST",
             body: formData,
             headers: authHeaders(),
@@ -86,37 +91,53 @@ export const sendImageToAI = async (imageFile, modality = "mri", organHint = "")
  * Returns an array of history items.
  */
 export const getHistory = async () => {
-    const response = await fetch(buildApiUrl('/api/ai/history'), {
-        headers: authHeaders(),
-    });
+    try {
+        const response = await fetch(buildApiUrl(`/api/ai/history`), {
+            headers: authHeaders(),
+        });
 
-    if (!response.ok) return [];
+        if (!response.ok) return [];
 
-    const resData = await response.json();
-    return resData?.data?.history || [];
+        const resData = await response.json();
+        return resData?.data?.history || [];
+    } catch (error) {
+        console.error("Error fetching history:", error);
+        return [];
+    }
 };
 
 /**
  * Fetch a single analysis by ID.
  */
 export const getAnalysisById = async (id) => {
-    const response = await fetch(buildApiUrl(`/api/ai/history/${id}`), {
-        headers: authHeaders(),
-    });
+    try {
+        const response = await fetch(buildApiUrl(`/api/ai/history/${id}`), {
+            headers: authHeaders(),
+        });
 
-    if (!response.ok) return null;
+        if (!response.ok) return null;
 
-    const resData = await response.json();
-    return resData?.data?.analysis || null;
+        const resData = await response.json();
+        return resData?.data?.analysis || null;
+    } catch (error) {
+        console.error("Error fetching analysis by id:", error);
+        return null;
+    }
 };
 
 /**
  * Delete a specific history entry.
  */
 export const deleteHistoryItem = async (id) => {
-    const response = await fetch(buildApiUrl(`/api/ai/history/${id}`), {
-        method: "DELETE",
-        headers: authHeaders(),
-    });
-    return response.ok;
+    try {
+        const response = await fetch(buildApiUrl(`/api/ai/history/${id}`), {
+            method: "DELETE",
+            headers: authHeaders(),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error("Error deleting history item:", error);
+        return false;
+    }
 };
+

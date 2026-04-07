@@ -56,52 +56,6 @@ const ProjectVision = () => {
                         </div>
                     </motion.div>
 
-                    {/* Detailed Breakdowns */}
-                    <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 md:mt-10">
-
-                        {/* Box 1 */}
-                        {/* <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            className="p-8 bg-zinc-900 border border-zinc-800 rounded-3xl relative group overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Cpu size={80} />
-                            </div>
-                            <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
-                                <Scan size={20} className="text-zinc-500" />
-                                Image Analysis
-                            </h3>
-                            <p className="text-zinc-400 leading-relaxed text-base">
-                                The AI system supports multi-organ tumor screening workflows and routes scans to the appropriate model profile. By leveraging modern AI techniques, the platform can process uploaded medical images and provide structured insights that help research teams review tumor-related patterns faster.
-                            </p>
-                        </motion.div> */}
-
-                        {/* Box 2 */}
-                        {/* <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            className="p-8 bg-white text-black rounded-3xl relative group overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 p-6 opacity-10">
-                                <Lightbulb size={80} />
-                            </div>
-                            <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
-                                <Activity size={20} className="text-zinc-400" />
-                                Our Primary Goal
-                            </h3>
-                            <p className="text-zinc-700 leading-relaxed text-base font-medium">
-                                Our goal is to explore how AI technologies can contribute to medical image analysis, making the process faster and more efficient for research and educational purposes.
-                            </p>
-                            <div className="mt-6 flex items-center gap-4">
-                                <div className="h-px flex-1 bg-black/10"></div>
-                                <span className="text-[9px] font-mono tracking-widest text-black/40 uppercase">Efficiency & Research</span>
-                            </div>
-                        </motion.div> */}
-
-                    </div>
                 </div>
 
 

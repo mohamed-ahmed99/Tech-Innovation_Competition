@@ -9,8 +9,15 @@ import { usePostMethod } from '../../hooks/usePostMethod';
 import { useNavigate } from 'react-router-dom';
 import Message from '../../components/Message';
 
+
+// api base
+const API_BASE_DEV = "http://localhost:5150";
+const API_BASE_PROD = "https://neuro-gaurd-ai-backend.vercel.app";
+
 function SignUp() {
-    window.scrollTo(0, 0);
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     // navigate
     const navigate = useNavigate();
@@ -70,7 +77,8 @@ function SignUp() {
         }
 
         // post data
-        await postData("/api/auth/signup", {}, formData);
+        const API_BASE = window.location.hostname === 'localhost' ? API_BASE_DEV : API_BASE_PROD;
+        await postData(`${API_BASE}/api/auth/signup`, {}, formData);
     };
 
     useEffect(() => {
@@ -78,11 +86,11 @@ function SignUp() {
         if (status_p === "fail") setShowMsg(true);
 
         // Navigate to verify email if success, with a slight delay to show the message
-        if (status_p === "success") {
+        if (status_p === "success" && data_p?.email) {
             sessionStorage.setItem("NeuroAi_Email_For_Verification", data_p.email);
             navigate("/auth/verify-email");
         }
-    }, [status_p, navigate]);
+    }, [status_p, navigate, data_p]);
 
     // Cleanup effect for the timeout
     useEffect(() => {
@@ -148,7 +156,7 @@ function SignUp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <motion.div variants={itemVariants}>
                         <Input
-                            label="Email Address" name="email" type="string" placeholder="name@example.com" required
+                            label="Email Address" name="email" type="email" placeholder="name@example.com" required
                             value={formData.email} onChange={handleChange}
                             error={errors.email}
                         />

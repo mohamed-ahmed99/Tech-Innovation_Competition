@@ -15,6 +15,7 @@ function LogIn() {
 
     // post data hook
     const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
+    console.log("data_p", { status_p, message_p, data_p, loading_p });
     const [store, setGlobalData] = useGlobalData();
 
     // form data state
@@ -62,7 +63,9 @@ function LogIn() {
         }
 
         // post data using the hook
-        const result = await postData("/api/auth/signin", {}, formData);
+        const API_BASE_DEV = "http://localhost:5150";
+        const API_BASE_PROD = "https://neuro-gaurd-ai-backend.vercel.app";
+        const result = await postData(`${API_BASE_PROD}/api/auth/signin`, {}, formData);
 
         // Handle redirection for unverified users based on backend "order"
         if (result && result.order === "verifyEmail") {

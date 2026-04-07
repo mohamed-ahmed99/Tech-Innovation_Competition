@@ -35,7 +35,9 @@ function App() {
     const verifyUser = async () => {
       if (token) {
         // Uses same-origin /api so Vercel rewrites can proxy correctly in production.
-        await getData("/api/auth/verify-me");
+        const API_BASE_DEV = "http://localhost:5150";
+        const API_BASE_PROD = "https://neuro-gaurd-ai-backend.vercel.app";
+        await getData(`${API_BASE_PROD}/api/auth/verify-me`);
       } else {
         setGlobalData("user", null);
       }

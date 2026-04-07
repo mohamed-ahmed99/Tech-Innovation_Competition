@@ -18,6 +18,10 @@ import {
 } from './contract';
 
 const DigitalTwinForm = () => {
+
+    const API_BASE_DEV = "http://localhost:5150";
+    const API_BASE_PROD = "https://neuro-gaurd-ai-backend.vercel.app";
+
     const navigate = useNavigate();
     const { postData, status_p, message_p, loading_p } = usePostMethod();
 
@@ -62,7 +66,7 @@ const DigitalTwinForm = () => {
         setHistoryError('');
 
         try {
-            const response = await fetch(buildApiUrl('/api/ai/digital-twin/history'), {
+            const response = await fetch(buildApiUrl(`${API_BASE_PROD}/api/ai/digital-twin/history`), {
                 headers: {
                     authorization: `Bearer ${token}`,
                 },
@@ -182,7 +186,7 @@ const DigitalTwinForm = () => {
             performance_status: Number.parseInt(formData.performance_status, 10),
         };
 
-        const response = await postData(buildApiUrl('/api/ai/digital-twin/recommend'), {}, payload);
+        const response = await postData(buildApiUrl(`${API_BASE_PROD}/api/ai/digital-twin/recommend`), {}, payload);
         const responseStatus = String(response?.status || '').toLowerCase();
 
         if (responseStatus === 'success') {
