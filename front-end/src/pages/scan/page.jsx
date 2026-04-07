@@ -129,7 +129,7 @@ const ScanPage = () => {
         };
 
         setGlobalData('lastAnalysisBundle', payload);
-        navigate('/treatment-3d', { state: payload });
+        navigate('/simulation-3d', { state: payload });
     };
 
     if (!digitalTwinProfile) {

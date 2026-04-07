@@ -11,7 +11,7 @@ import MainLayout from './components/MainLayout';
 import ScanPage from './pages/scan/page';
 import AboutPage from './pages/about/page';
 import DigitalTwinPage from './pages/digital twin/page';
-import Treatment3DPage from './pages/treatment3d/page';
+import Simulation3DPage from './pages/simulation3d/page';
 
 
 
@@ -65,7 +65,8 @@ function App() {
           <Route path="/digital-twin" element={<DigitalTwinPage />} />
           <Route path="/scan" element={<ScanPage />} />
           <Route path="/model" element={<ScanPage />} />
-          <Route path="/treatment-3d" element={<Treatment3DPage />} />
+          <Route path="/simulation-3d" element={<Simulation3DPage />} />
+          <Route path="/treatment-3d" element={<Simulation3DPage />} />
         </Route>
       </Routes>
     </Router>

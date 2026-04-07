@@ -26,10 +26,10 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-    const navLinks = location.pathname === '/' ? [] : [
+    const navLinks = [
         { to: "/digital-twin", label: "Digital Twin", icon: <Cpu size={16} /> },
         { to: "/scan", label: "Scan", icon: <Scan size={16} /> },
-        { to: "/simulation-3d", label: "3D Lab", icon: <Cpu size={16} /> },
+        { to: "/simulation-3d", label: "3D Simulation", icon: <Cpu size={16} /> },
         { to: "/about-us", label: "About Us", icon: <Info size={16} /> },
     ];
 
