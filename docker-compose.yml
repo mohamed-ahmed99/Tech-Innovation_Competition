@@ -9,8 +9,8 @@ services:
     container_name: neuroguard-ai
     restart: unless-stopped
     environment:
-      - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/best_model.pth
-      - TUMOR_CHECKPOINT=/app/checkpoints/best_model.pth
+      - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/brain_new_20260408/brain_best_model_new.pth
+      - TUMOR_CHECKPOINT=/app/checkpoints/brain_new_20260408/brain_best_model_new.pth
       - TUMOR_DEVICE=cpu
       - AI_PORT=8000
       - CORS_ORIGINS=*
