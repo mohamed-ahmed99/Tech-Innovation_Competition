@@ -4,11 +4,13 @@ import Button from '../../components/btns/Button';
 import List from '../../components/inputs/List';
 import { X } from 'lucide-react';
 import { validateDigitalTwinData } from './validation';
-import { useNavigate } from 'react-router-dom';
+import { usePostMethod } from '../../hooks/usePostMethod'
 import { useGlobalData } from '../../hooks/useGlobalData';
 
 const DigitalTwinForm = () => {
-    const navigate = useNavigate();
+
+    // my hooks
+    const { postData, status_p, message_p, data_p, loading_p } = usePostMethod();
     const [, setGlobalData] = useGlobalData();
 
 
@@ -26,8 +28,6 @@ const DigitalTwinForm = () => {
 
     const [errors, setErrors] = useState({});
     const [currentSymptom, setCurrentSymptom] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitNotice, setSubmitNotice] = useState('');
 
     // Auto-clear errors after 5 seconds
     useEffect(() => {
@@ -91,9 +91,6 @@ const DigitalTwinForm = () => {
             return;
         }
 
-        setIsSubmitting(true);
-        setSubmitNotice('');
-
         const normalizedFormData = {
             ...formData,
             age: Number(formData.age),
@@ -104,24 +101,11 @@ const DigitalTwinForm = () => {
         setGlobalData('digitalTwinProfile', normalizedFormData);
         localStorage.setItem('NeuroGuard_DigitalTwin', JSON.stringify(normalizedFormData));
 
-        // Best-effort save to backend if endpoint is available.
-        try {
-            const token = localStorage.getItem('NeuroAi_Token');
-            await fetch('https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { authorization: `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify(normalizedFormData),
-            });
-        } catch {
-            setSubmitNotice('Digital Twin saved locally. Moving to MRI analysis.');
-        }
-
-        setIsSubmitting(false);
-        navigate('/scan');
+        // http://localhost:5150/api/ai/digital-twin
+        // https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin
+        await postData("https://neuro-gaurd-ai-backend.vercel.app/api/ai/digital-twin", {}, normalizedFormData);
     };
+    console.log({ data_p, status_p, message_p, loading_p });
 
     const genderOptions = [
         { label: 'Male', value: 'male' },
@@ -287,17 +271,12 @@ const DigitalTwinForm = () => {
             </div>
 
             <div className="pt-2 sm:pt-4 mt-2 sm:mt-6 border-t border-zinc-800">
-                {submitNotice && (
-                    <p className="text-xs text-zinc-400 mb-3">{submitNotice}</p>
-                )}
                 <Button
                     type="submit"
                     variant="primary"
                     width="full"
-                    isLoading={isSubmitting}
-                    disabled={isSubmitting}
                 >
-                    Continue to MRI Model
+                    Send
                 </Button>
             </div>
 

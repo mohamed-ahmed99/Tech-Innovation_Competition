@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Scan, Cpu, Lightbulb } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 const ProjectVision = () => {
     return (
@@ -33,21 +32,6 @@ const ProjectVision = () => {
                         PROJECT <br />
                         <span className="text-zinc-800">VISION.</span>
                     </motion.h2>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2 }}
-                        className="mt-8"
-                    >
-                        <Link
-                            to="/digital-twin"
-                            className="inline-flex items-center justify-center px-7 py-3 rounded-xl bg-zinc-100 text-zinc-950 font-bold tracking-wide hover:bg-white transition-colors"
-                        >
-                            Try Our Model
-                        </Link>
-                    </motion.div>
                 </div>
 
                 {/* Content Grid */}
@@ -61,9 +45,15 @@ const ProjectVision = () => {
                         transition={{ delay: 0.2 }}
                         className="lg:col-span-12"
                     >
-                        <p className="text-xl md:text-2xl font-light leading-snug text-zinc-300 max-w-5xl italic border-l-4 border-white pl-6 md:pl-8">
-                            "Our project focuses on using <span className="text-white font-medium">Artificial Intelligence</span> to assist in the analysis of medical images related to tumor screening across brain, liver, spinal cord, and breast studies. The platform allows users to upload a medical image, after which the AI system analyzes the image to help identify suspicious patterns."
-                        </p>
+                        <div className="border-l-[3px] border-primary pl-8 md:pl-12 py-3">
+                            <p className="text-2xl md:text-3xl font-medium leading-relaxed text-text-main max-w-5xl">
+                                An advanced <span className="text-primary font-bold">intelligent system</span> that leverages the latest artificial intelligence technologies to analyze medical imaging with exceptional precision for detecting diseases in the <span className="font-bold underline decoration-primary/20 underline-offset-4">brain, stomach, liver, and breast</span>.
+                            </p>
+                            
+                            <p className="mt-8 text-lg md:text-xl text-white/70 leading-relaxed max-w-4xl font-normal italic">
+                                It also creates a sophisticated <span className="text-text-main font-semibold">digital twin</span> of the patient, enabling the simulation of different treatment approaches before real-world application, ensuring faster diagnosis, higher accuracy, and highly personalized treatment for each patient.
+                            </p>
+                        </div>
                     </motion.div>
 
                     {/* Detailed Breakdowns */}

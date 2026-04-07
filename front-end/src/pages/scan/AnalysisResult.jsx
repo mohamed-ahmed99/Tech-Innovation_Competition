@@ -3,7 +3,7 @@ import { Sparkles, RefreshCw, Copy, CheckCircle2, Download, Printer } from 'luci
 import { motion, AnimatePresence } from 'framer-motion';
 import { jsPDF } from 'jspdf';
 
-const AnalysisResult = ({ result, structured, onReset, onVisualize3D, digitalTwinProfile }) => {
+const AnalysisResult = ({ result, structured, onReset }) => {
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
@@ -107,20 +107,6 @@ const AnalysisResult = ({ result, structured, onReset, onVisualize3D, digitalTwi
         structured?.treatmentOptions ||
         structured?.advice?.treatmentOptions ||
         [];
-
-    const treatmentComparison =
-        structured?.treatment_comparison ||
-        structured?.treatmentComparison ||
-        structured?.advice?.treatmentComparison ||
-        [];
-
-    const suggestedTreatment =
-        structured?.suggested_treatment ||
-        structured?.suggestedTreatment ||
-        structured?.advice?.suggestedTreatment ||
-        treatmentComparison?.[0]?.name ||
-        treatmentOptions?.[0] ||
-        'Not available';
 
     const expectedOutlook =
         structured?.expected_outlook ||
@@ -328,30 +314,6 @@ const AnalysisResult = ({ result, structured, onReset, onVisualize3D, digitalTwi
                         </div>
 
                         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 sm:col-span-2">
-                            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Digital Twin Personalized Suggestion</p>
-                            <p className="text-sm text-zinc-100 font-semibold leading-relaxed">{suggestedTreatment}</p>
-                            {digitalTwinProfile && (
-                                <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                                    Based on twin profile: age {digitalTwinProfile.age}, grade {digitalTwinProfile.tumor_grade}, previous treatment {digitalTwinProfile.previous_treatment}.
-                                </p>
-                            )}
-
-                            {treatmentComparison.length > 0 && (
-                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                    {treatmentComparison.slice(0, 3).map((option, idx) => (
-                                        <div key={`compare-option-${idx}`} className="rounded-lg border border-zinc-700 bg-zinc-900/40 p-3">
-                                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">Option {idx + 1}</p>
-                                            <p className="text-sm text-zinc-100 mt-1">{option?.name || option}</p>
-                                            {typeof option?.suitabilityScore === 'number' && (
-                                                <p className="text-xs text-zinc-400 mt-1">Fit score: {option.suitabilityScore}%</p>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 sm:col-span-2">
                             <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Expected Outlook</p>
                             <p className="text-sm text-zinc-200 leading-relaxed">{expectedOutlook}</p>
                         </div>
@@ -395,17 +357,6 @@ const AnalysisResult = ({ result, structured, onReset, onVisualize3D, digitalTwi
                                     <span>Download PDF</span>
                                 </button>
                             </div>
-                            {onVisualize3D && (
-                                <div className="grid grid-cols-1 gap-2 mb-2">
-                                    <button
-                                        onClick={onVisualize3D}
-                                        className="w-full py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-zinc-100/80"
-                                    >
-                                        <span>Visualize Treatment In 3D</span>
-                                    </button>
-                                    <p className="text-[11px] text-zinc-500 text-center">Do you want to try the treatment on 3D and compare the top 3 plans?</p>
-                                </div>
-                            )}
                             <div className="grid grid-cols-1 gap-2 mb-2">
                                 <button
                                     onClick={handlePrintReport}

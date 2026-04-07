@@ -48,16 +48,6 @@ const features = [
   }
 ];
 
-const HomePage = () => {
-    const [store, setGlobalData] = useGlobalData();
-    
-    // State for the image selection and analysis process
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [analysisResult, setAnalysisResult] = useState(null);
-    const [structuredResult, setStructuredResult] = useState(null);
-    const [selectedOrganHint, setSelectedOrganHint] = useState('brain');
 
 // framer motion variants
 const containerVariants = {
@@ -88,30 +78,12 @@ const itemVariants = {
 
 
 
-    const handleAnalyze = async () => {
-        if (!selectedFile) return;
-        
-        setIsAnalyzing(true);
-        
-        try {
-            const organHint = selectedOrganHint;
-            const modalityByOrgan = {
-                brain: 'mri',
-                liver: 'ct',
-                breast: 'xray',
-            };
-            const modality = modalityByOrgan[organHint] || 'mri';
-            const result = await sendImageToAI(selectedFile, modality, organHint);
-            setAnalysisResult(result.text);
-            setStructuredResult(result.structured);
-        } catch (error) {
-            console.error("Error analyzing image:", error);
-            const msg = error?.message || "Unknown error while analyzing the image.";
-            setAnalysisResult(`Analysis failed: ${msg}`);
-        } finally {
-            setIsAnalyzing(false);
-        }
-    };
+// home page component
+export default function HomePage() {
+  return (
+    <div className='min-h-[calc(100vh-80px)] flex flex-col items-center justify-center p-4 md:p-8 bg-zinc-950 relative overflow-hidden'>
+      {/* Subtle Background Elements */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Header Section */}
       <motion.div 
@@ -163,29 +135,10 @@ const itemVariants = {
                 <p className='text-zinc-500 text-[9px] md:text-xs leading-tight md:leading-normal max-w-[110px] md:max-w-none group-hover:text-zinc-300 transition-colors duration-500'>
                   {feature.description}
                 </p>
+              </div>
 
-                <div className="mt-6 max-w-md mx-auto rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 text-left">
-                    <label htmlFor="organ-hint" className="block text-xs uppercase tracking-wide text-zinc-500 mb-2">
-                        Target Organ Routing
-                    </label>
-                    <select
-                        id="organ-hint"
-                        value={selectedOrganHint}
-                        onChange={(event) => setSelectedOrganHint(event.target.value)}
-                        disabled={isAnalyzing}
-                        className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-500 disabled:opacity-60"
-                    >
-                        <option value="brain">Brain</option>
-                        <option value="liver">Liver</option>
-                        <option value="breast">Breast</option>
-                        <option value="lung" disabled>Lung (coming soon)</option>
-                        <option value="kidney" disabled>Kidney (coming soon)</option>
-                        <option value="prostate" disabled>Prostate (coming soon)</option>
-                    </select>
-                    <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                        Select the target organ directly. Lung, Kidney, and Prostate are UI placeholders for the upcoming release.
-                    </p>
-                </div>
+              {/* Bottom accent line */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-white group-hover:w-1/3 transition-all duration-500 opacity-50" />
             </motion.div>
           </Link>
         ))}

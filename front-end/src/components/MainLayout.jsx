@@ -37,7 +37,7 @@ export default function MainLayout() {
 
             {/* Main Content */}
             <div className="flex flex-1 overflow-hidden relative">
-                {(user && (location.pathname === '/scan' || location.pathname === '/model')) && (
+                {user && (pagesHasSidebar.includes(location.pathname)) && (
                     <Sidebar
                         isMobileOpen={isSidebarOpen}
                         onClose={() => setIsSidebarOpen(false)}

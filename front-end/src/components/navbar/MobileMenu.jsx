@@ -1,24 +1,8 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, LogIn } from 'lucide-react';
+import { LogOut, LogIn, Info, Cpu } from 'lucide-react';
 
-export default function MobileMenu({ navLinks, currentPath, isOpen, onClose, isUserAuthenticated, onLogout }) {
-    const isLinkActive = (to) => {
-        if (to === '/about-us') {
-            return currentPath === '/' || currentPath === '/about-us';
-        }
-
-        if (to === '/scan') {
-            return currentPath === '/scan' || currentPath === '/model';
-        }
-
-        if (to === '/simulation-3d') {
-            return currentPath === '/simulation-3d' || currentPath === '/treatment-3d';
-        }
-
-        return currentPath === to;
-    };
-
+export default function MobileMenu({ navLinks, isOpen, onClose, isUserAuthenticated, onLogout }) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -35,11 +19,7 @@ export default function MobileMenu({ navLinks, currentPath, isOpen, onClose, isU
                                 key={link.to}
                                 to={link.to}
                                 onClick={onClose}
-                                className={`flex items-center gap-3 text-base font-medium p-3 rounded-xl border transition-colors ${
-                                    isLinkActive(link.to)
-                                        ? 'text-zinc-100 bg-zinc-900 border-zinc-700'
-                                        : 'text-zinc-300 border-transparent hover:bg-zinc-900 hover:text-zinc-100'
-                                }`}
+                                className="flex items-center gap-3 text-lg font-medium text-zinc-200 p-3 hover:bg-zinc-900 rounded-xl transition-colors"
                             >
                                 {link.icon}
                                 {link.label}
@@ -47,15 +27,7 @@ export default function MobileMenu({ navLinks, currentPath, isOpen, onClose, isU
                         ))}
 
                         <div className="mt-2 pt-4 border-t border-zinc-900">
-                            {isUserAuthenticated ? (
-                                <button
-                                    onClick={onLogout}
-                                    className="w-full flex items-center justify-center gap-3 px-5 py-3 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-200 text-sm font-semibold active:scale-95 transition-transform"
-                                >
-                                    <LogOut size={18} />
-                                    Logout
-                                </button>
-                            ) : (
+                            {isUserAuthenticated ? null : (
                                 <Link
                                     to="/auth/login"
                                     onClick={onClose}
