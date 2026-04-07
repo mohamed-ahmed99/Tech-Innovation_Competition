@@ -21,6 +21,21 @@ const DigitalTwinForm = () => {
     const navigate = useNavigate();
     const { postData, status_p, message_p, loading_p } = usePostMethod();
 
+    const digitalTwinApiBase = useMemo(() => {
+        const envBase = String(import.meta.env.VITE_API_BASE || '').trim().replace(/\/+$/, '');
+        if (envBase) {
+            return envBase;
+        }
+
+        if (typeof window !== 'undefined' && window.location.hostname === 'neuro-gaurd.vercel.app') {
+            return 'https://neuro-gaurd-ai-backend.vercel.app';
+        }
+
+        return '';
+    }, []);
+
+    const buildApiUrl = (path) => `${digitalTwinApiBase}${path}`;
+
     const [formData, setFormData] = useState({
         age: '',
         gender: '',
@@ -52,7 +67,7 @@ const DigitalTwinForm = () => {
         setHistoryError('');
 
         try {
-            const response = await fetch('/api/ai/digital-twin/history', {
+            const response = await fetch(buildApiUrl('/api/ai/digital-twin/history'), {
                 headers: {
                     authorization: `Bearer ${token}`,
                 },
@@ -172,7 +187,7 @@ const DigitalTwinForm = () => {
             performance_status: Number.parseInt(formData.performance_status, 10),
         };
 
-        const response = await postData('/api/ai/digital-twin/recommend', {}, payload);
+        const response = await postData(buildApiUrl('/api/ai/digital-twin/recommend'), {}, payload);
         const responseStatus = String(response?.status || '').toLowerCase();
 
         if (responseStatus === 'success') {

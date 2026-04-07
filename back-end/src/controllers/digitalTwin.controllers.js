@@ -1,6 +1,11 @@
 import { status } from '../config/constants.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import DigitalTwinRun from '../models/digitalTwinRun.model.js';
+import {
+    fallbackContractResponse,
+    fallbackHealthResponse,
+    generateFallbackRecommendation,
+} from '../utils/digitalTwin.fallbackEngine.js';
 import { computeScoreMargin, rankTreatmentSimulations } from '../utils/digitalTwin.scoring.js';
 import { validateDigitalTwinPayload } from '../utils/digitalTwin.validation.js';
 
@@ -55,6 +60,14 @@ function extractErrorMessage(errorBody) {
     return errorBody;
 }
 
+function shouldUseLocalFallback(statusCode, detail = '') {
+    if (statusCode === 404) {
+        return true;
+    }
+
+    return typeof detail === 'string' && /not found/i.test(detail);
+}
+
 function createRecommendationPayload(inputProfile, aiResult, savedRun = null) {
     const ranked = rankTreatmentSimulations(aiResult?.simulations || {});
     const scoreMargin = computeScoreMargin(ranked);
@@ -69,6 +82,8 @@ function createRecommendationPayload(inputProfile, aiResult, savedRun = null) {
         },
         alternatives,
         score_margin: scoreMargin,
+        engine: aiResult?.engine || 'digital_twin_heuristic_v1',
+        mode: aiResult?.mode || 'rule-based',
         disclaimer: DIGITAL_TWIN_DISCLAIMER,
         input_profile: inputProfile,
         saved_run: savedRun
@@ -95,6 +110,7 @@ function mapRunToResponse(run) {
         disclaimer: run.disclaimer || DIGITAL_TWIN_DISCLAIMER,
         input_profile: run.inputProfile,
         contract_version: run.contractVersion,
+        engine: run.contractVersion,
     };
 }
 
@@ -137,6 +153,8 @@ export const createDigitalTwin = asyncHandler(async (req, res) => {
     const aiServiceUrl = resolveAiServiceUrl();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), getAiRequestTimeoutMs());
+    let aiResult = null;
+    let usedFallback = false;
 
     try {
         const response = await fetch(`${aiServiceUrl}/api/v1/digital-twin/recommend`, {
@@ -152,17 +170,22 @@ export const createDigitalTwin = asyncHandler(async (req, res) => {
             const errBody = await response.text();
             const detail = extractErrorMessage(errBody);
 
-            // Map upstream 4xx validation issues to 400 for the frontend contract.
-            const mappedStatusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+            if (shouldUseLocalFallback(response.status, detail)) {
+                aiResult = generateFallbackRecommendation(normalizedPayload);
+                usedFallback = true;
+            } else {
+                // Map upstream 4xx validation issues to 400 for the frontend contract.
+                const mappedStatusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
 
-            return res.status(mappedStatusCode).json({
-                status: status.ERROR,
-                message: 'Digital Twin engine returned an error',
-                detail,
-            });
+                return res.status(mappedStatusCode).json({
+                    status: status.ERROR,
+                    message: 'Digital Twin engine returned an error',
+                    detail,
+                });
+            }
+        } else {
+            aiResult = await response.json();
         }
-
-        const aiResult = await response.json();
         const ranked = rankTreatmentSimulations(aiResult?.simulations || {});
         const scoreMargin = computeScoreMargin(ranked);
         const alternatives = ranked.slice(1);
@@ -181,12 +204,15 @@ export const createDigitalTwin = asyncHandler(async (req, res) => {
                 alternatives,
                 scoreMargin,
                 disclaimer: DIGITAL_TWIN_DISCLAIMER,
+                contractVersion: aiResult.engine || 'digital_twin_heuristic_v1',
             });
         }
 
         return res.status(201).json({
             status: status.SUCCESS,
-            message: 'Digital twin recommendation generated',
+            message: usedFallback
+                ? 'Digital twin recommendation generated (fallback engine)'
+                : 'Digital twin recommendation generated',
             data: createRecommendationPayload(normalizedPayload, aiResult, savedRun),
         });
     } catch (err) {
@@ -243,37 +269,37 @@ export const getDigitalTwinRunById = asyncHandler(async (req, res) => {
 export const getDigitalTwinHealth = asyncHandler(async (req, res) => {
     try {
         const proxy = await proxyDigitalTwinGet('/api/v1/digital-twin/health');
-        return res.status(proxy.statusCode).json(proxy.body || {});
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            return res.status(504).json({
-                status: status.ERROR,
-                message: 'Digital Twin health check timed out.',
-            });
+
+        if (proxy.ok) {
+            return res.status(proxy.statusCode).json(proxy.body || {});
         }
 
-        return res.status(503).json({
-            status: status.ERROR,
-            message: 'Digital Twin service is unavailable.',
-        });
+        const detail = String(proxy?.body?.detail || proxy?.body?.message || '');
+        if (shouldUseLocalFallback(proxy.statusCode, detail)) {
+            return res.status(200).json(fallbackHealthResponse());
+        }
+
+        return res.status(proxy.statusCode).json(proxy.body || {});
+    } catch (err) {
+        return res.status(200).json(fallbackHealthResponse());
     }
 });
 
 export const getDigitalTwinContract = asyncHandler(async (req, res) => {
     try {
         const proxy = await proxyDigitalTwinGet('/api/v1/digital-twin/contract');
-        return res.status(proxy.statusCode).json(proxy.body || {});
-    } catch (err) {
-        if (err.name === 'AbortError') {
-            return res.status(504).json({
-                status: status.ERROR,
-                message: 'Digital Twin contract request timed out.',
-            });
+
+        if (proxy.ok) {
+            return res.status(proxy.statusCode).json(proxy.body || {});
         }
 
-        return res.status(503).json({
-            status: status.ERROR,
-            message: 'Digital Twin service is unavailable.',
-        });
+        const detail = String(proxy?.body?.detail || proxy?.body?.message || '');
+        if (shouldUseLocalFallback(proxy.statusCode, detail)) {
+            return res.status(200).json(fallbackContractResponse());
+        }
+
+        return res.status(proxy.statusCode).json(proxy.body || {});
+    } catch (err) {
+        return res.status(200).json(fallbackContractResponse());
     }
 });
