@@ -1,10 +1,11 @@
 import { useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Html, OrbitControls } from '@react-three/drei';
-import { Bloom, EffectComposer, Noise } from '@react-three/postprocessing';
+import { Bloom, DepthOfField, EffectComposer, Noise } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
 import {
+    LOBE_LABELS_3D,
     TREATMENTS,
     computeSimulation,
     getActiveLobeKey,
@@ -13,362 +14,216 @@ import {
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-const LABEL_POINTS = [
-    { key: 'left-frontal', label: 'L FRONTAL', position: [-1.34, 0.64, 0.84] },
-    { key: 'right-frontal', label: 'R FRONTAL', position: [1.34, 0.64, 0.84] },
-    { key: 'left-temporal', label: 'L TEMPORAL', position: [-1.42, -0.34, 0.84] },
-    { key: 'right-temporal', label: 'R TEMPORAL', position: [1.42, -0.34, 0.84] },
-    { key: 'left-occipital', label: 'L OCCIPITAL', position: [-1.46, 0.06, 0.8] },
-    { key: 'right-occipital', label: 'R OCCIPITAL', position: [1.46, 0.06, 0.8] },
-    { key: 'left-parietal', label: 'L PARIETAL', position: [-1.18, 0.3, 0.82] },
-    { key: 'right-parietal', label: 'R PARIETAL', position: [1.18, 0.3, 0.82] },
-    { key: 'deep-core', label: 'DEEP CORE', position: [0, 0.07, 0.68] },
-];
+function useFoldedGeometry() {
+    return useMemo(() => {
+        const geometry = new THREE.IcosahedronGeometry(1, 7);
+        const position = geometry.attributes.position;
+        const v = new THREE.Vector3();
 
-const RING_RADII = [0.14, 0.21, 0.28, 0.35, 0.42];
+        for (let i = 0; i < position.count; i += 1) {
+            v.fromBufferAttribute(position, i);
+            const fold =
+                0.055 * Math.sin(v.x * 11.5) * Math.cos(v.y * 13.2)
+                + 0.028 * Math.sin(v.z * 17.2)
+                + 0.012 * Math.sin((v.x + v.z) * 19.0);
+            v.normalize().multiplyScalar(1 + fold);
+            position.setXYZ(i, v.x, v.y, v.z);
+        }
 
-const TUMOR_RESPONSE_PROFILES = {
-    surgery: {
-        startRadius: 0.36,
-        minRadius: 0.08,
-        shrinkCurve: 0.58,
-        edemaStart: 0.56,
-        edemaMin: 0.2,
-        edemaWeight: 0.74,
-    },
-    radiation: {
-        startRadius: 0.33,
-        minRadius: 0.12,
-        shrinkCurve: 0.96,
-        edemaStart: 0.52,
-        edemaMin: 0.23,
-        edemaWeight: 0.64,
-    },
-    chemotherapy: {
-        startRadius: 0.31,
-        minRadius: 0.17,
-        shrinkCurve: 1.32,
-        edemaStart: 0.49,
-        edemaMin: 0.27,
-        edemaWeight: 0.52,
-    },
-};
+        position.needsUpdate = true;
+        geometry.computeVertexNormals();
+        return geometry;
+    }, []);
+}
 
-function HemisphereShell({ xOffset, tint, clippingPlanes }) {
+function useMRITexture() {
+    return useMemo(() => {
+        if (typeof document === 'undefined') return null;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        ctx.fillStyle = '#0b1325';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const gradient = ctx.createRadialGradient(256, 256, 18, 256, 256, 240);
+        gradient.addColorStop(0, 'rgba(226,232,240,0.35)');
+        gradient.addColorStop(0.5, 'rgba(148,163,184,0.14)');
+        gradient.addColorStop(1, 'rgba(15,23,42,0.04)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(256, 256, 236, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(148,163,184,0.26)';
+        for (let r = 38; r < 236; r += 15) {
+            ctx.lineWidth = r % 30 === 0 ? 1.8 : 0.9;
+            ctx.beginPath();
+            ctx.arc(256, 256, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.needsUpdate = true;
+        return texture;
+    }, []);
+}
+
+function RadiationWaves({ position, progress, active, color }) {
+    const refs = useRef([]);
+
+    useFrame(({ clock }) => {
+        if (!active) {
+            refs.current.forEach((mesh) => {
+                if (!mesh) return;
+                mesh.visible = false;
+            });
+            return;
+        }
+
+        refs.current.forEach((mesh, idx) => {
+            if (!mesh) return;
+            mesh.visible = true;
+            const phase = ((clock.elapsedTime * 0.8 + idx * 0.35) % 1 + 1) % 1;
+            const scale = 0.3 + phase * (1.4 + progress * 0.7);
+            mesh.scale.setScalar(scale);
+            mesh.material.opacity = clamp(0.42 - phase * 0.34, 0.05, 0.42);
+        });
+    });
+
     return (
-        <group position={[xOffset, 0.02, 0]}>
-            <mesh scale={[1.02, 0.72, 0.86]}>
-                <sphereGeometry args={[0.92, 64, 64]} />
-                <meshPhysicalMaterial
-                    color={tint}
-                    roughness={0.18}
-                    metalness={0.02}
-                    transmission={0.26}
-                    thickness={0.48}
-                    ior={1.16}
-                    clearcoat={0.55}
-                    clearcoatRoughness={0.2}
-                    transparent
-                    opacity={0.4}
-                    emissive="#93c5fd"
-                    emissiveIntensity={0.14}
-                    clippingPlanes={clippingPlanes}
-                />
-            </mesh>
-
-            <mesh scale={[1.03, 0.73, 0.87]}>
-                <sphereGeometry args={[0.92, 48, 48]} />
-                <meshBasicMaterial
-                    color="#7dd3fc"
-                    wireframe
-                    transparent
-                    opacity={0.16}
-                    clippingPlanes={clippingPlanes}
-                />
-            </mesh>
-
-            <mesh position={[0, 0, 0.03]} scale={[0.96, 0.65, 0.72]}>
-                <sphereGeometry args={[0.82, 48, 48]} />
-                <meshBasicMaterial
-                    color="#e2e8f0"
-                    transparent
-                    opacity={0.13}
-                    side={THREE.BackSide}
-                    clippingPlanes={clippingPlanes}
-                />
-            </mesh>
-
-            <mesh position={[0, 0.01, 0.39]} scale={[1.08, 0.74, 1]}>
-                <ringGeometry args={[0.62, 0.66, 120]} />
-                <meshBasicMaterial
-                    color="#c7d2fe"
-                    transparent
-                    opacity={0.22}
-                    clippingPlanes={clippingPlanes}
-                />
-            </mesh>
-
-            <mesh position={[0, -0.09, 0.32]} scale={[0.99, 0.66, 1]}>
-                <ringGeometry args={[0.55, 0.58, 120]} />
-                <meshBasicMaterial
-                    color="#93c5fd"
-                    transparent
-                    opacity={0.15}
-                    clippingPlanes={clippingPlanes}
-                />
-            </mesh>
+        <group position={position}>
+            {[0, 1, 2].map((idx) => (
+                <mesh key={idx} ref={(el) => { refs.current[idx] = el; }}>
+                    <sphereGeometry args={[0.2, 48, 48]} />
+                    <meshBasicMaterial color={color} wireframe transparent opacity={0.3} />
+                </mesh>
+            ))}
         </group>
     );
 }
 
-function EnergyBands({ xOffset, color, intensity, clippingPlanes }) {
-    const bars = useMemo(
-        () => Array.from({ length: 18 }).map((_, idx) => {
-            const t = idx / 17;
-            return {
-                x: (t - 0.5) * 1.02,
-                height: 0.18 + Math.sin(t * Math.PI) * 0.28,
-                phase: idx * 0.27,
-            };
+function ChemoCloud({ position, progress, active, color }) {
+    const groupRef = useRef(null);
+    const particles = useMemo(
+        () => Array.from({ length: 34 }).map((_, i) => {
+            const theta = (i / 34) * Math.PI * 2;
+            const phi = ((i * 7) % 34) / 34 * Math.PI;
+            const radius = 0.35 + ((i * 13) % 10) * 0.03;
+            return { theta, phi, radius };
         }),
         []
     );
 
-    const barRefs = useRef([]);
-
     useFrame(({ clock }) => {
-        barRefs.current.forEach((bar, idx) => {
-            if (!bar) return;
-            const wave = 0.56 + Math.sin(clock.elapsedTime * 1.7 + bars[idx].phase) * 0.44;
-            // `bar` is the material instance itself, so update opacity directly.
-            bar.opacity = clamp(0.06 + wave * (0.08 + intensity * 0.14), 0.06, 0.3);
-        });
+        if (!groupRef.current) return;
+        groupRef.current.visible = active;
+        groupRef.current.rotation.y = clock.elapsedTime * 0.55;
+        groupRef.current.rotation.x = Math.sin(clock.elapsedTime * 0.4) * 0.14;
     });
 
     return (
-        <group position={[xOffset, 0.28, 0.2]}>
-            {bars.map((bar, idx) => (
-                <mesh key={`${xOffset}-${idx}`} position={[bar.x, 0, 0.04 - Math.abs(bar.x) * 0.1]}>
-                    <boxGeometry args={[0.028, bar.height, 0.018]} />
-                    <meshBasicMaterial
-                        ref={(el) => {
-                            barRefs.current[idx] = el;
-                        }}
-                        color={color}
-                        transparent
-                        opacity={0.1}
-                        clippingPlanes={clippingPlanes}
-                    />
-                </mesh>
-            ))}
-        </group>
-    );
-}
-
-function CorticalWaves({ xOffset, color, active, clippingPlanes }) {
-    const ringRefs = useRef([]);
-
-    useFrame(({ clock }) => {
-        ringRefs.current.forEach((ring, idx) => {
-            if (!ring) return;
-            const pulse = 1 + Math.sin(clock.elapsedTime * 1.55 + idx * 0.7) * 0.03;
-            ring.scale.setScalar(pulse);
-            ring.material.opacity = clamp(
-                0.09 + (active ? 0.04 : 0) + Math.sin(clock.elapsedTime * 1.4 + idx) * 0.02,
-                0.05,
-                0.18
-            );
-        });
-    });
-
-    return (
-        <group position={[xOffset + Math.sign(xOffset) * 0.08, -0.08, 0.31]}>
-            {RING_RADII.map((radius, idx) => (
-                <mesh
-                    key={`${xOffset}-${radius}`}
-                    ref={(el) => {
-                        ringRefs.current[idx] = el;
-                    }}
-                >
-                    <torusGeometry args={[radius, 0.0065, 8, 100]} />
-                    <meshBasicMaterial
-                        color={color}
-                        transparent
-                        opacity={0.11}
-                        clippingPlanes={clippingPlanes}
-                    />
-                </mesh>
-            ))}
-        </group>
-    );
-}
-
-function TumorPulse({ position, color, progress, radius, clippingPlanes }) {
-    const coreRef = useRef(null);
-    const ringRefs = useRef([]);
-    const pulseScale = clamp(radius / 0.24, 0.46, 1.75);
-
-    useFrame(({ clock }) => {
-        const pulse = 1 + Math.sin(clock.elapsedTime * 2.8) * 0.08;
-        if (coreRef.current) {
-            coreRef.current.scale.setScalar(pulse);
-            coreRef.current.material.emissiveIntensity = 0.9 + Math.sin(clock.elapsedTime * 2.8) * 0.22;
-        }
-
-        ringRefs.current.forEach((ring, idx) => {
-            if (!ring) return;
-            const phase = ((clock.elapsedTime * 0.64 + idx * 0.32) % 1 + 1) % 1;
-            const scale = 0.72 + phase * (1.05 + progress * 0.25);
-            ring.scale.set(scale, scale, scale);
-            ring.material.opacity = clamp(0.28 - phase * 0.23, 0.04, 0.28);
-        });
-    });
-
-    return (
-        <group position={position} scale={[pulseScale, pulseScale, pulseScale]}>
-            <mesh ref={coreRef}>
-                <sphereGeometry args={[0.09, 26, 26]} />
-                <meshStandardMaterial
-                    color="#f8fafc"
-                    emissive={color}
-                    emissiveIntensity={1}
-                    roughness={0.18}
-                    metalness={0.06}
-                    clippingPlanes={clippingPlanes}
-                />
-            </mesh>
-
-            {[0, 1, 2].map((idx) => (
-                <mesh
-                    key={idx}
-                    ref={(el) => {
-                        ringRefs.current[idx] = el;
-                    }}
-                >
-                    <ringGeometry args={[0.15, 0.165, 80]} />
-                    <meshBasicMaterial
-                        color={color}
-                        transparent
-                        opacity={0.16}
-                        side={THREE.DoubleSide}
-                        clippingPlanes={clippingPlanes}
-                    />
-                </mesh>
-            ))}
-        </group>
-    );
-}
-
-function RadiationRipples({ position, progress, active, color, clippingPlanes }) {
-    const refs = useRef([]);
-
-    useFrame(({ clock }) => {
-        refs.current.forEach((ring, idx) => {
-            if (!ring) return;
-            ring.visible = active;
-            if (!active) return;
-
-            const phase = ((clock.elapsedTime * 0.78 + idx * 0.3) % 1 + 1) % 1;
-            const scale = 0.65 + phase * (1.25 + progress * 0.3);
-            ring.scale.set(scale, scale, scale);
-            ring.material.opacity = clamp(0.22 - phase * 0.19, 0.03, 0.22);
-        });
-    });
-
-    return (
-        <group position={position}>
-            {[0, 1, 2].map((idx) => (
-                <mesh
-                    key={idx}
-                    ref={(el) => {
-                        refs.current[idx] = el;
-                    }}
-                >
-                    <ringGeometry args={[0.1, 0.118, 96]} />
-                    <meshBasicMaterial
-                        color={color}
-                        transparent
-                        opacity={0.15}
-                        side={THREE.DoubleSide}
-                        clippingPlanes={clippingPlanes}
-                    />
-                </mesh>
-            ))}
-        </group>
-    );
-}
-
-function ChemoParticles({ position, progress, active, color, clippingPlanes }) {
-    const seeds = useMemo(
-        () => Array.from({ length: 24 }).map((_, idx) => ({
-            angle: (idx / 24) * Math.PI * 2,
-            lane: 0.14 + (idx % 6) * 0.025,
-            speed: 0.7 + (idx % 5) * 0.15,
-            y: ((idx % 7) - 3) * 0.03,
-        })),
-        []
-    );
-
-    const refs = useRef([]);
-
-    useFrame(({ clock }) => {
-        refs.current.forEach((dot, idx) => {
-            if (!dot) return;
-            dot.visible = active;
-            if (!active) return;
-
-            const seed = seeds[idx];
-            const orbit = seed.angle + clock.elapsedTime * seed.speed;
-            const radius = seed.lane * (0.92 + progress * 0.35);
-            dot.position.set(
-                Math.cos(orbit) * radius,
-                seed.y + Math.sin(orbit * 1.4) * 0.04,
-                Math.sin(orbit) * radius * 0.55
-            );
-        });
-    });
-
-    return (
-        <group position={position}>
-            {seeds.map((_, idx) => (
-                <mesh
-                    key={idx}
-                    ref={(el) => {
-                        refs.current[idx] = el;
-                    }}
-                >
-                    <sphereGeometry args={[0.017, 12, 12]} />
-                    <meshStandardMaterial
-                        color={color}
-                        emissive={color}
-                        emissiveIntensity={0.9}
-                        transparent
-                        opacity={0.86}
-                        clippingPlanes={clippingPlanes}
-                    />
-                </mesh>
-            ))}
+        <group ref={groupRef} position={position}>
+            {particles.map((p, idx) => {
+                const flow = 0.75 + progress * 0.9;
+                const r = p.radius * flow;
+                const x = Math.cos(p.theta) * Math.sin(p.phi) * r;
+                const y = Math.cos(p.phi) * r;
+                const z = Math.sin(p.theta) * Math.sin(p.phi) * r;
+                return (
+                    <mesh key={idx} position={[x, y, z]}>
+                        <sphereGeometry args={[0.035, 16, 16]} />
+                        <meshStandardMaterial
+                            color={color}
+                            emissive={color}
+                            emissiveIntensity={0.9}
+                            transparent
+                            opacity={0.85}
+                        />
+                    </mesh>
+                );
+            })}
         </group>
     );
 }
 
 function CutPlane({ axis, offset }) {
-    let position = [0, 0, offset * 0.8];
+    let position = [0, 0, offset];
     let rotation = [0, 0, 0];
 
     if (axis === 'axial') {
-        position = [0, offset * 0.8, 0.25];
+        position = [0, offset, 0];
         rotation = [Math.PI / 2, 0, 0];
     } else if (axis === 'sagittal') {
-        position = [offset * 0.8, 0, 0.25];
+        position = [offset, 0, 0];
         rotation = [0, Math.PI / 2, 0];
     }
 
     return (
         <mesh position={position} rotation={rotation}>
-            <planeGeometry args={[2.4, 1.7]} />
-            <meshBasicMaterial color="#38bdf8" transparent opacity={0.1} side={THREE.DoubleSide} />
+            <planeGeometry args={[2.9, 2.9]} />
+            <meshBasicMaterial color="#60a5fa" transparent opacity={0.14} side={THREE.DoubleSide} />
         </mesh>
+    );
+}
+
+function TumorBeacon({ position, color, active }) {
+    const coreRef = useRef(null);
+    const ringRefs = useRef([]);
+
+    useFrame(({ clock }) => {
+        const pulse = 1 + Math.sin(clock.elapsedTime * 3.2) * 0.06;
+        if (coreRef.current) {
+            coreRef.current.scale.setScalar(pulse);
+            coreRef.current.material.emissiveIntensity = 0.95 + Math.sin(clock.elapsedTime * 3.2) * 0.18;
+        }
+
+        ringRefs.current.forEach((ring, idx) => {
+            if (!ring) return;
+
+            ring.visible = active;
+            if (!active) return;
+
+            const phase = ((clock.elapsedTime * 0.55 + idx * 0.28) % 1 + 1) % 1;
+            const scale = 0.7 + phase * 1.15;
+            ring.scale.set(scale, scale, scale);
+            ring.material.opacity = clamp(0.32 - phase * 0.24, 0.04, 0.32);
+        });
+    });
+
+    return (
+        <group position={position}>
+            <mesh ref={coreRef}>
+                <sphereGeometry args={[0.14, 28, 28]} />
+                <meshStandardMaterial
+                    color="#fff7ed"
+                    emissive={color}
+                    emissiveIntensity={1}
+                    roughness={0.2}
+                    metalness={0.05}
+                    transparent
+                    opacity={0.96}
+                />
+            </mesh>
+
+            {[0, 1, 2].map((idx) => (
+                <mesh
+                    key={idx}
+                    ref={(el) => {
+                        ringRefs.current[idx] = el;
+                    }}
+                    rotation={[Math.PI / 2, 0, 0]}
+                >
+                    <ringGeometry args={[0.2, 0.22, 64]} />
+                    <meshBasicMaterial color={color} transparent opacity={0.2} side={THREE.DoubleSide} />
+                </mesh>
+            ))}
+        </group>
     );
 }
 
@@ -384,67 +239,49 @@ function SceneCore({
     sliceOffset,
     compact,
 }) {
+    const brainGeometry = useFoldedGeometry();
+    const mriTexture = useMRITexture();
+
     const metrics = useMemo(() => computeSimulation(treatment, intensity), [treatment, intensity]);
+    const tumorPosition = useMemo(() => getTumorPosition(tumorLocation, laterality), [tumorLocation, laterality]);
     const activeLobe = useMemo(() => getActiveLobeKey(tumorLocation, laterality), [tumorLocation, laterality]);
-    const tumorRawPosition = useMemo(() => getTumorPosition(tumorLocation, laterality), [tumorLocation, laterality]);
-
-    const tumorPosition = useMemo(
-        () => [
-            tumorRawPosition[0] * 1.02,
-            tumorRawPosition[1] * 0.86 + 0.01,
-            0.28 + tumorRawPosition[2] * 0.24,
-        ],
-        [tumorRawPosition]
-    );
-
-    const progressRatio = clamp(progress / 100, 0, 1);
-    const doseStrength = clamp((intensity / 100) * (0.38 + progressRatio * 0.62), 0.16, 1);
-    const uncertainty = clamp(1 - confidence, 0.04, 0.78);
-
-    const responseProfile = TUMOR_RESPONSE_PROFILES[treatment] || TUMOR_RESPONSE_PROFILES.surgery;
-    const progressDrivenResponse = Math.pow(progressRatio, responseProfile.shrinkCurve);
-    const biologicalResponse = clamp(metrics.reduction * (0.72 + doseStrength * 0.44), 0.12, 0.95);
-    const shrinkAmount = clamp(progressDrivenResponse * biologicalResponse, 0, 0.95);
-
-    const tumorRadius = clamp(
-        responseProfile.startRadius * (1 - shrinkAmount),
-        responseProfile.minRadius,
-        responseProfile.startRadius
-    );
-
-    const edemaStart = responseProfile.edemaStart + uncertainty * 0.09;
-    const edemaRadius = clamp(
-        edemaStart * (1 - shrinkAmount * responseProfile.edemaWeight),
-        responseProfile.edemaMin + uncertainty * 0.06,
-        edemaStart
-    );
-
-    const treatmentColor = TREATMENTS[treatment].color;
-    const focusColor = useMemo(() => {
-        const base = new THREE.Color(treatmentColor);
-        return `#${base.clone().lerp(new THREE.Color('#bef264'), 0.16).getHexString()}`;
-    }, [treatmentColor]);
-
-    const focusX = tumorLocation === 'deep' ? 0 : laterality === 'left' ? -0.56 : 0.56;
-
-    const visibleLabelKeys = useMemo(() => {
-        const keys = laterality === 'right'
-            ? ['left-frontal', 'right-frontal', 'left-occipital', 'left-temporal', 'right-temporal']
-            : ['left-frontal', 'right-frontal', 'right-occipital', 'right-temporal', 'left-temporal'];
-
+    const activeLobeLabel = useMemo(() => {
+        if (activeLobe === 'deep-core') return 'Deep Core';
+        return activeLobe
+            .split('-')
+            .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+            .join(' ');
+    }, [activeLobe]);
+    const visibleLabels = useMemo(() => {
         if (activeLobe === 'deep-core') {
-            keys.push('left-temporal', 'right-temporal');
-        } else {
-            keys.push(activeLobe);
+            return LOBE_LABELS_3D.filter((label) => label.key === 'deep-core');
         }
 
-        return Array.from(new Set(keys));
-    }, [activeLobe, laterality]);
+        const [side, region] = activeLobe.split('-');
+        const oppositeSide = side === 'left' ? 'right' : 'left';
+        const oppositeKey = `${oppositeSide}-${region}`;
 
-    const visibleLabels = useMemo(
-        () => LABEL_POINTS.filter((label) => visibleLabelKeys.includes(label.key)),
-        [visibleLabelKeys]
-    );
+        return LOBE_LABELS_3D.filter(
+            (label) => label.key === activeLobe || label.key === oppositeKey
+        );
+    }, [activeLobe]);
+
+    const progressRatio = progress / 100;
+    const doseStrength = clamp((intensity / 100) * (0.35 + progressRatio * 0.65), 0.15, 1);
+
+    const uncertainty = clamp(1 - confidence, 0.03, 0.85);
+    const tumorScale = clamp(0.45 - metrics.reduction * progressRatio * 0.25, 0.18, 0.45);
+    const edemaScale = clamp(0.72 - metrics.reduction * progressRatio * 0.34, 0.28, 0.72);
+    const corticalRingRadii = useMemo(() => [0.3, 0.38, 0.46, 0.54], []);
+
+    const healthyExposure = clamp(metrics.risk * 0.72 + doseStrength * 0.25, 0, 1);
+    const tissueColor = useMemo(() => {
+        const base = new THREE.Color('#a8b5ce');
+        const warn = new THREE.Color('#fb923c');
+        return base.lerp(warn, healthyExposure * 0.58);
+    }, [healthyExposure]);
+
+    const treatmentColor = TREATMENTS[treatment].color;
 
     const clipPlane = useMemo(() => {
         if (!sliceEnabled) return null;
@@ -458,189 +295,277 @@ function SceneCore({
 
     return (
         <>
-            <fog attach="fog" args={['#020817', 3.4, 10.5]} />
-            <ambientLight intensity={0.34} />
-            <directionalLight position={[1.8, 2.8, 3.2]} intensity={0.9} color="#dbeafe" />
-            <pointLight position={[-2.4, 1.4, 1.6]} intensity={0.35} color="#38bdf8" />
-            <pointLight position={[2.35, 1.15, 1.5]} intensity={0.5} color={focusColor} />
+            <fog attach="fog" args={['#030712', 4.6, 13.5]} />
+            <ambientLight intensity={0.38} />
+            <directionalLight
+                position={[3.1, 4.2, 2.8]}
+                intensity={1.1}
+                color="#dbeafe"
+                castShadow
+                shadow-mapSize-width={2048}
+                shadow-mapSize-height={2048}
+            />
+            <pointLight position={[-2.8, -1.7, 2.0]} intensity={0.55} color="#7dd3fc" />
+            <pointLight position={[2.5, 2.2, -2.5]} intensity={0.45} color="#bef264" />
 
-            <mesh position={[-0.95, 0.15, -0.58]} scale={[1.38, 1.0, 1]}>
-                <circleGeometry args={[0.75, 80]} />
-                <meshBasicMaterial color="#38bdf8" transparent opacity={0.045} blending={THREE.AdditiveBlending} />
-            </mesh>
-            <mesh position={[0.98, 0.02, -0.56]} scale={[1.44, 1.05, 1]}>
-                <circleGeometry args={[0.8, 80]} />
-                <meshBasicMaterial color={focusColor} transparent opacity={0.09} blending={THREE.AdditiveBlending} />
-            </mesh>
-
-            <group position={[0, 0.03, 0.06]}>
-                <HemisphereShell xOffset={-0.6} tint="#8ea7cb" clippingPlanes={clippingPlanes} />
-                <HemisphereShell xOffset={0.6} tint="#95aecd" clippingPlanes={clippingPlanes} />
-
-                <mesh position={[0, 0.01, 0.25]}>
-                    <capsuleGeometry args={[0.03, 0.76, 4, 10]} />
-                    <meshBasicMaterial color="#93c5fd" transparent opacity={0.14} clippingPlanes={clippingPlanes} />
-                </mesh>
-
-                <mesh position={[0, -0.16, 0.24]}>
-                    <boxGeometry args={[2.25, 0.025, 0.03]} />
-                    <meshBasicMaterial color="#7dd3fc" transparent opacity={0.08} clippingPlanes={clippingPlanes} />
-                </mesh>
-
-                <mesh position={[0, -0.03, 0.18]} scale={[2.18, 1.08, 1]}>
-                    <circleGeometry args={[0.66, 120]} />
-                    <meshBasicMaterial color="#93c5fd" transparent opacity={0.08} blending={THREE.AdditiveBlending} />
-                </mesh>
-
-                <mesh position={[0, 0.02, 0.39]} scale={[1.92, 0.78, 1]}>
-                    <ringGeometry args={[0.63, 0.66, 140]} />
-                    <meshBasicMaterial color="#bfdbfe" transparent opacity={0.16} clippingPlanes={clippingPlanes} />
-                </mesh>
-
-                <EnergyBands xOffset={-0.6} color="#67e8f9" intensity={doseStrength} clippingPlanes={clippingPlanes} />
-                <EnergyBands xOffset={0.6} color={focusColor} intensity={doseStrength} clippingPlanes={clippingPlanes} />
-
-                <CorticalWaves xOffset={-0.63} color="#93c5fd" active={progress > 0} clippingPlanes={clippingPlanes} />
-                <CorticalWaves xOffset={0.63} color={focusColor} active={progress > 0} clippingPlanes={clippingPlanes} />
-
-                <mesh position={[focusX * 0.7, -0.03, 0.2]} scale={[1 + doseStrength * 0.2, 0.82 + doseStrength * 0.14, 1]}>
-                    <circleGeometry args={[0.55, 90]} />
-                    <meshBasicMaterial
-                        color={focusColor}
+            <group>
+                <mesh
+                    position={[-0.52, 0, 0]}
+                    scale={[0.93, 1.05, 1]}
+                    castShadow
+                    receiveShadow
+                >
+                    <primitive object={brainGeometry} attach="geometry" />
+                    <meshPhysicalMaterial
+                        color={tissueColor}
+                        roughness={0.32}
+                        metalness={0.06}
+                        transmission={0.42}
+                        thickness={0.45}
+                        ior={1.21}
+                        clearcoat={0.58}
+                        clearcoatRoughness={0.28}
+                        emissive="#1e293b"
+                        emissiveIntensity={0.22 + healthyExposure * 0.18}
                         transparent
-                        opacity={0.17 + doseStrength * 0.12}
+                        opacity={0.62}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh
+                    position={[0.52, 0, 0]}
+                    scale={[0.93, 1.05, 1]}
+                    castShadow
+                    receiveShadow
+                >
+                    <primitive object={brainGeometry} attach="geometry" />
+                    <meshPhysicalMaterial
+                        color={tissueColor}
+                        roughness={0.32}
+                        metalness={0.06}
+                        transmission={0.42}
+                        thickness={0.45}
+                        ior={1.21}
+                        clearcoat={0.58}
+                        clearcoatRoughness={0.28}
+                        emissive="#1e293b"
+                        emissiveIntensity={0.22 + healthyExposure * 0.18}
+                        transparent
+                        opacity={0.62}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh position={[-0.52, 0, 0]} scale={[0.95, 1.08, 1.03]}>
+                    <primitive object={brainGeometry} attach="geometry" />
+                    <meshBasicMaterial
+                        color="#7dd3fc"
+                        wireframe
+                        transparent
+                        opacity={0.1}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh position={[0.52, 0, 0]} scale={[0.95, 1.08, 1.03]}>
+                    <primitive object={brainGeometry} attach="geometry" />
+                    <meshBasicMaterial
+                        color="#7dd3fc"
+                        wireframe
+                        transparent
+                        opacity={0.1}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                {[-0.52, 0.52].map((xOffset, hemisphereIdx) => (
+                    <group key={xOffset} position={[xOffset, 0.02, 0.04]}>
+                        {corticalRingRadii.map((radius, idx) => (
+                            <mesh
+                                key={`${xOffset}-${radius}`}
+                                position={[0, 0, -0.06 - idx * 0.04]}
+                                rotation={[Math.PI / 2, 0, hemisphereIdx === 0 ? 0.22 : -0.22]}
+                            >
+                                <torusGeometry args={[radius, 0.008, 10, 96]} />
+                                <meshBasicMaterial
+                                    color={idx % 2 === 0 ? '#38bdf8' : '#60a5fa'}
+                                    transparent
+                                    opacity={0.2}
+                                    clippingPlanes={clippingPlanes}
+                                />
+                            </mesh>
+                        ))}
+                    </group>
+                ))}
+
+                <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                    <torusGeometry args={[0.08, 0.02, 24, 80]} />
+                    <meshStandardMaterial color="#0f172a" emissive="#0f172a" clippingPlanes={clippingPlanes} />
+                </mesh>
+
+                <mesh position={[0, -0.95, -0.18]} rotation={[Math.PI / 2.35, 0, 0]} castShadow>
+                    <cylinderGeometry args={[0.14, 0.2, 0.66, 32]} />
+                    <meshStandardMaterial
+                        color="#94a3b8"
+                        roughness={0.56}
+                        metalness={0.04}
+                        emissive="#1f2937"
+                        emissiveIntensity={0.22}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh position={[0, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                    <circleGeometry args={[1.3, 64]} />
+                    <meshBasicMaterial
+                        map={mriTexture || null}
+                        transparent
+                        opacity={0.24}
+                        color="#e2e8f0"
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh position={tumorPosition} scale={[edemaScale, edemaScale, edemaScale]}>
+                    <sphereGeometry args={[0.5, 40, 40]} />
+                    <meshStandardMaterial
+                        color="#fb7185"
+                        transparent
+                        opacity={0.18}
+                        emissive="#f97316"
+                        emissiveIntensity={0.52 + doseStrength * 0.35}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh position={tumorPosition} scale={[tumorScale + 0.28, tumorScale + 0.28, tumorScale + 0.28]}>
+                    <sphereGeometry args={[0.5, 32, 32]} />
+                    <meshStandardMaterial
+                        color="#fb923c"
+                        transparent
+                        opacity={0.28}
+                        emissive="#fb923c"
+                        emissiveIntensity={0.78 + doseStrength * 0.32}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh position={tumorPosition} scale={[tumorScale, tumorScale, tumorScale]} castShadow>
+                    <sphereGeometry args={[0.5, 48, 48]} />
+                    <meshStandardMaterial
+                        color="#fff7ed"
+                        emissive="#f97316"
+                        emissiveIntensity={0.95 + doseStrength * 0.38}
+                        roughness={0.22}
+                        metalness={0.08}
+                        clippingPlanes={clippingPlanes}
+                    />
+                </mesh>
+
+                <mesh
+                    position={tumorPosition}
+                    scale={[tumorScale + uncertainty * 0.5, tumorScale + uncertainty * 0.5, tumorScale + uncertainty * 0.5]}
+                >
+                    <sphereGeometry args={[0.62, 36, 36]} />
+                    <meshBasicMaterial
+                        color="#f8fafc"
+                        transparent
+                        opacity={0.09 + uncertainty * 0.24}
                         blending={THREE.AdditiveBlending}
                     />
                 </mesh>
 
-                <mesh position={tumorPosition} scale={[edemaRadius, edemaRadius, edemaRadius]}>
-                    <sphereGeometry args={[0.48, 40, 40]} />
-                    <meshStandardMaterial
-                        color="#fb7185"
-                        transparent
-                        opacity={0.16 + uncertainty * 0.08}
-                        emissive="#fb923c"
-                        emissiveIntensity={0.46 + doseStrength * 0.25}
-                        clippingPlanes={clippingPlanes}
-                    />
-                </mesh>
-
-                <mesh position={tumorPosition} scale={[tumorRadius + 0.08, tumorRadius + 0.08, tumorRadius + 0.08]}>
-                    <sphereGeometry args={[0.5, 32, 32]} />
-                    <meshStandardMaterial
-                        color={focusColor}
-                        transparent
-                        opacity={0.24}
-                        emissive={focusColor}
-                        emissiveIntensity={0.76}
-                        clippingPlanes={clippingPlanes}
-                    />
-                </mesh>
-
-                <TumorPulse
+                <TumorBeacon
                     position={tumorPosition}
-                    color={focusColor}
-                    progress={progressRatio}
-                    radius={tumorRadius}
-                    clippingPlanes={clippingPlanes}
+                    color={treatmentColor}
+                    active={progress > 0}
                 />
 
-                {treatment === 'radiation' && (
-                    <RadiationRipples
-                        position={tumorPosition}
-                        progress={progressRatio}
-                        active={progress > 0}
-                        color={focusColor}
-                        clippingPlanes={clippingPlanes}
-                    />
-                )}
-
-                {treatment === 'chemotherapy' && (
-                    <ChemoParticles
-                        position={tumorPosition}
-                        progress={progressRatio}
-                        active={progress > 0}
-                        color={focusColor}
-                        clippingPlanes={clippingPlanes}
-                    />
-                )}
-
                 {treatment === 'surgery' && (
-                    <mesh
-                        position={tumorPosition}
-                        scale={[0.12 + progressRatio * 0.18, 0.12 + progressRatio * 0.18, 0.12 + progressRatio * 0.18]}
-                    >
-                        <sphereGeometry args={[0.54, 28, 28]} />
+                    <mesh position={tumorPosition} scale={[0.12 + progressRatio * 0.45, 0.12 + progressRatio * 0.45, 0.12 + progressRatio * 0.45]}>
+                        <sphereGeometry args={[0.52, 30, 30]} />
                         <meshStandardMaterial
-                            color="#030712"
+                            color="#020617"
                             emissive="#020617"
-                            emissiveIntensity={0.14}
+                            emissiveIntensity={0.2}
                             transparent
-                            opacity={0.22 + progressRatio * 0.22}
+                            opacity={0.16 + progressRatio * 0.28}
                             clippingPlanes={clippingPlanes}
                         />
                     </mesh>
                 )}
 
+                {treatment === 'radiation' && (
+                    <RadiationWaves
+                        position={tumorPosition}
+                        progress={progressRatio}
+                        active={progress > 0}
+                        color={treatmentColor}
+                    />
+                )}
+
+                {treatment === 'chemotherapy' && (
+                    <ChemoCloud
+                        position={tumorPosition}
+                        progress={progressRatio}
+                        active={progress > 0}
+                        color={treatmentColor}
+                    />
+                )}
+
                 {sliceEnabled && <CutPlane axis={sliceAxis} offset={sliceOffset} />}
 
-                {!compact && visibleLabels.map((label) => (
-                    <Html key={label.key} position={label.position} transform={false} center>
-                        <span className={`brain-lobe-tag ${label.key === activeLobe ? 'brain-lobe-tag--active' : 'brain-lobe-tag--muted'}`}>
+                {visibleLabels.map((label) => (
+                    <Html key={label.key} position={label.position} distanceFactor={compact ? 11 : 9} transform={false}>
+                        <span className={`brain-lobe-tag ${activeLobe === label.key ? 'brain-lobe-tag--active' : 'brain-lobe-tag--muted'}`}>
                             {label.label}
                         </span>
                     </Html>
                 ))}
 
-                {!compact && (
-                    <>
-                        <Html
-                            position={[tumorPosition[0] + 0.01, tumorPosition[1], tumorPosition[2] + 0.28]}
-                            transform={false}
-                            center
-                        >
-                            <div className={`brain-pin ${progress > 0 ? 'brain-pin--active' : ''}`}>
-                                <span className="brain-pin__dot" />
-                                <span className="brain-pin__line" />
-                            </div>
-                        </Html>
-                    </>
-                )}
+                <Html position={[tumorPosition[0], tumorPosition[1] + 0.2, tumorPosition[2]]} center distanceFactor={compact ? 10 : 8}>
+                    <div className={`brain-pin ${progress > 0 ? 'brain-pin--active' : ''}`}>
+                        <span className="brain-pin__dot" />
+                        <div className="brain-pin__meta">
+                            <span className="brain-pin__label">{activeLobeLabel}</span>
+                            <span className="brain-pin__stat">{Math.round(metrics.reduction * 100)}% est. response</span>
+                        </div>
+                    </div>
+                </Html>
             </group>
 
             <ContactShadows
-                position={[0, -1.36, 0]}
-                opacity={0.25}
-                width={5.8}
-                height={4.3}
-                blur={2.6}
-                far={2.8}
+                position={[0, -1.45, 0]}
+                opacity={0.33}
+                width={6.2}
+                height={6.2}
+                blur={2.7}
+                far={3.2}
                 color="#020617"
             />
 
             <OrbitControls
                 enablePan={false}
-                enableRotate={!compact}
-                enableZoom={!compact}
-                minDistance={2.7}
-                maxDistance={4.5}
+                minDistance={2.5}
+                maxDistance={6.1}
                 enableDamping
-                dampingFactor={0.08}
-                autoRotate={false}
-                maxAzimuthAngle={0.24}
-                minAzimuthAngle={-0.24}
-                maxPolarAngle={Math.PI * 0.58}
-                minPolarAngle={Math.PI * 0.44}
+                dampingFactor={0.09}
+                autoRotate={!compact}
+                autoRotateSpeed={compact ? 0 : 0.16}
+                maxPolarAngle={Math.PI * 0.68}
+                minPolarAngle={Math.PI * 0.32}
             />
 
             <EffectComposer>
                 <Bloom
-                    luminanceThreshold={0.12}
-                    luminanceSmoothing={0.38}
-                    intensity={0.52 + doseStrength * 0.45}
+                    luminanceThreshold={0.15}
+                    luminanceSmoothing={0.35}
+                    intensity={0.7 + doseStrength * 0.6}
                     mipmapBlur
                 />
-                <Noise opacity={0.04} />
+                <DepthOfField focusDistance={0.02} focalLength={0.03} bokehScale={1.35} />
+                <Noise opacity={0.06} />
             </EffectComposer>
         </>
     );
@@ -655,7 +580,7 @@ export default function BrainTwinScene(props) {
         <div className={`brain-canvas-shell ${compact ? 'brain-canvas-shell--compact' : ''}`}>
             <Canvas
                 shadows
-                camera={{ position: [0, 0.32, 3.35], fov: compact ? 44 : 38 }}
+                camera={{ position: [0.3, 1.15, 3.45], fov: compact ? 48 : 42 }}
                 gl={{ antialias: true, localClippingEnabled: true }}
             >
                 <SceneCore {...props} compact={compact} />

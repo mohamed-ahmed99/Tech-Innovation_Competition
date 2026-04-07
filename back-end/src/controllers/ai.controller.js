@@ -2,10 +2,139 @@ import { status } from '../config/constants.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import Analysis from '../models/analysis.model.js';
 
-// URL of the Python AI service (set via env var, default to localhost for dev)
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+// URL of the Python AI service.
+// Priority: explicit env -> public fallback host -> localhost for local dev.
+const AI_SERVICE_URL =
+    process.env.AI_SERVICE_URL ||
+    process.env.PUBLIC_AI_SERVICE_URL ||
+    'http://159.89.12.125:8000';
 
-function buildAdvice(result, modality = 'mri') {
+function parseDigitalTwinProfile(rawDigitalTwin) {
+    if (!rawDigitalTwin) return null;
+
+    if (typeof rawDigitalTwin === 'object') {
+        return rawDigitalTwin;
+    }
+
+    if (typeof rawDigitalTwin === 'string') {
+        try {
+            return JSON.parse(rawDigitalTwin);
+        } catch {
+            return null;
+        }
+    }
+
+    return null;
+}
+
+function toNumber(value, fallback = 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function buildTwinAwareTreatmentComparison(treatmentOptions = [], digitalTwin = null, detected = false) {
+    if (!digitalTwin || !Array.isArray(treatmentOptions) || treatmentOptions.length === 0) {
+        return treatmentOptions.slice(0, 3).map((name, index) => ({
+            rank: index + 1,
+            name,
+            suitabilityScore: Math.max(50, 85 - index * 10),
+            rationale: 'Baseline ranking from current AI findings.',
+        }));
+    }
+
+    const tumorGrade = String(digitalTwin.tumor_grade || '').toLowerCase();
+    const previousTreatment = String(digitalTwin.previous_treatment || '').toLowerCase();
+    const performanceStatus = toNumber(digitalTwin.performance_status, 0);
+    const tumorSizeCm = toNumber(digitalTwin.tumor_size_cm, 0);
+    const symptoms = Array.isArray(digitalTwin.symptoms)
+        ? digitalTwin.symptoms.map((item) => String(item).toLowerCase())
+        : [];
+
+    const redFlagKeywords = ['seizure', 'weakness', 'vomit', 'headache', 'vision'];
+    const hasRedFlagSymptoms = symptoms.some((symptom) =>
+        redFlagKeywords.some((keyword) => symptom.includes(keyword))
+    );
+
+    const ranked = treatmentOptions.slice(0, 3).map((option, index) => {
+        const optionName = String(option || 'Treatment option');
+        const lowerOption = optionName.toLowerCase();
+        const rationale = ['Aligned with model findings.'];
+        let score = 82 - index * 10;
+
+        if (tumorGrade === 'high') {
+            if (/combined|radiation|chemotherapy|systemic/.test(lowerOption)) {
+                score += 15;
+                rationale.push('High-grade profile favors stronger multi-modality control.');
+            } else {
+                score -= 10;
+                rationale.push('High-grade profile may require escalation beyond conservative options.');
+            }
+        }
+
+        if (tumorGrade === 'low' && /surgery|targeted|localized/.test(lowerOption)) {
+            score += 8;
+            rationale.push('Low-grade profile can benefit from localized disease control plans.');
+        }
+
+        if (previousTreatment && previousTreatment !== 'none') {
+            if (lowerOption.includes(previousTreatment)) {
+                score -= 6;
+                rationale.push(`Prior ${previousTreatment} suggests re-evaluating repeated single-line strategy.`);
+            } else {
+                score += 5;
+                rationale.push(`Alternative to prior ${previousTreatment} may improve treatment sequencing.`);
+            }
+        }
+
+        if (performanceStatus >= 3) {
+            if (/supportive|palliative|symptom|care/.test(lowerOption)) {
+                score += 18;
+                rationale.push('Performance status indicates supportive-first planning is important.');
+            } else {
+                score -= 7;
+                rationale.push('High-intensity therapy should be balanced against tolerance limits.');
+            }
+        }
+
+        if (tumorSizeCm >= 4 && /surgery|combined|debulking/.test(lowerOption)) {
+            score += 8;
+            rationale.push('Larger lesion size can favor debulking-focused pathways.');
+        }
+
+        if (detected && hasRedFlagSymptoms) {
+            score += 4;
+            rationale.push('Current symptom burden supports expedited specialist action.');
+        }
+
+        score = Math.max(1, Math.min(99, score));
+
+        return {
+            rank: index + 1,
+            name: optionName,
+            suitabilityScore: score,
+            rationale: rationale.join(' '),
+        };
+    });
+
+    return ranked
+        .sort((a, b) => b.suitabilityScore - a.suitabilityScore)
+        .map((item, index) => ({ ...item, rank: index + 1 }));
+}
+
+function buildDigitalTwinSummary(digitalTwin) {
+    if (!digitalTwin) return null;
+
+    return {
+        age: toNumber(digitalTwin.age, 0) || null,
+        gender: digitalTwin.gender || 'unspecified',
+        tumorGrade: digitalTwin.tumor_grade || 'unknown',
+        priorTreatment: digitalTwin.previous_treatment || 'none',
+        performanceStatus: toNumber(digitalTwin.performance_status, 0),
+        tumorSizeCm: toNumber(digitalTwin.tumor_size_cm, 0) || null,
+    };
+}
+
+function buildAdvice(result, modality = 'mri', digitalTwin = null) {
     const detected = Boolean(result?.tumor_detected ?? result?.tumorDetected);
     const confidence = Number(result?.confidence || 0);
     const location = result?.location || 'undetermined region';
@@ -54,6 +183,10 @@ function buildAdvice(result, modality = 'mri') {
                         ? 'Outlook depends on confirmed diagnosis, stage, and response to treatment. Early specialist care improves outcomes.'
                         : 'Current AI screening result is reassuring, but prognosis should always be confirmed by clinical evaluation.');
 
+    const treatmentComparison = buildTwinAwareTreatmentComparison(treatmentOptions, digitalTwin, detected);
+    const suggestedTreatment = treatmentComparison[0]?.name || treatmentOptions[0] || 'Not available';
+    const digitalTwinSummary = buildDigitalTwinSummary(digitalTwin);
+
     const redFlags = Array.isArray(result?.red_flags) && result.red_flags.length > 0
         ? result.red_flags
         : [
@@ -73,6 +206,9 @@ function buildAdvice(result, modality = 'mri') {
         confidencePercent: Number((confidence * 100).toFixed(1)),
         urgencyLevel,
         treatmentOptions,
+        suggestedTreatment,
+        treatmentComparison,
+        digitalTwinSummary,
         expectedOutlook,
         recommendedNextSteps: nextSteps,
         urgentCareFlags: redFlags,
@@ -83,10 +219,21 @@ function buildAdvice(result, modality = 'mri') {
 /**
  * Format the raw model JSON into a human-readable medical report.
  */
-function formatReport(result) {
+function formatReport(result, adviceOverride = null) {
     const { tumor_detected, confidence, location, bounding_box, raw_scores, modality } = result;
     const confPct = (confidence * 100).toFixed(1);
-    const advice = buildAdvice(result, modality || 'mri');
+    const advice = adviceOverride || buildAdvice(result, modality || 'mri');
+    const topThreePlans = advice.treatmentComparison?.length
+        ? advice.treatmentComparison.map((plan) => `- #${plan.rank} ${plan.name} (fit ${plan.suitabilityScore}%)`)
+        : ['- No treatment comparison available'];
+
+    const twinSummary = advice.digitalTwinSummary
+        ? `🧬 Digital Twin Context:
+  • Age: ${advice.digitalTwinSummary.age ?? 'n/a'}
+  • Tumor grade: ${advice.digitalTwinSummary.tumorGrade}
+  • Previous treatment: ${advice.digitalTwinSummary.priorTreatment}
+  • ECOG status: ${advice.digitalTwinSummary.performanceStatus}`
+        : '🧬 Digital Twin Context: Not provided';
 
     if (!tumor_detected) {
         return `🧠 NeuroGuard Analysis Report
@@ -112,6 +259,14 @@ ${advice.treatmentOptions.map((item) => `- ${item}`).join('\n')}
 
 📈 Expected outlook:
 ${advice.expectedOutlook}
+
+🎯 Suggested treatment from Digital Twin:
+${advice.suggestedTreatment}
+
+🧪 Top 3 personalized treatment paths:
+${topThreePlans.join('\n')}
+
+${twinSummary}
 
 ⚠️ When to seek urgent care:
 ${advice.urgentCareFlags.map((item) => `- ${item}`).join('\n')}
@@ -151,6 +306,14 @@ ${advice.treatmentOptions.map((item) => `- ${item}`).join('\n')}
 📈 Expected outlook:
 ${advice.expectedOutlook}
 
+🎯 Suggested treatment from Digital Twin:
+${advice.suggestedTreatment}
+
+🧪 Top 3 personalized treatment paths:
+${topThreePlans.join('\n')}
+
+${twinSummary}
+
 ⚠️ When to seek urgent care:
 ${advice.urgentCareFlags.map((item) => `- ${item}`).join('\n')}
 
@@ -176,6 +339,7 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
     }
 
     const modality = req.body.modality || 'mri';
+    const digitalTwinProfile = parseDigitalTwinProfile(req.body.digital_twin || req.body.digitalTwin);
 
     // Build multipart form using Node's native FormData/Blob for undici fetch compatibility.
     const form = new FormData();
@@ -208,12 +372,13 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
         }
 
         const aiResult = await response.json();
-        const advice = buildAdvice(aiResult, modality);
+        const advice = buildAdvice(aiResult, modality, digitalTwinProfile);
         const aiResultWithAdvice = {
             ...aiResult,
             advice,
+            digital_twin_profile: digitalTwinProfile,
         };
-        const formattedReport = formatReport({ ...aiResult, modality });
+        const formattedReport = formatReport({ ...aiResult, modality }, advice);
 
         // Save to history if user is authenticated
         if (req.user && req.user._id) {

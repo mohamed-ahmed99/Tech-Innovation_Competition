@@ -4,7 +4,6 @@ import { useGlobalData } from '../hooks/useGlobalData';
 import Navbar from './navbar/Navbar';
 import Sidebar from '../pages/scan/Sidebar';
 import { useLocation } from 'react-router-dom';
-import ChatbotWidget from './ChatbotWidget';
 
 export default function MainLayout() {
     const [user] = useGlobalData('user');
@@ -50,8 +49,6 @@ export default function MainLayout() {
                 <main className="flex-1 overflow-y-auto relative bg-zinc-950">
                     <Outlet />
                 </main>
-
-                <ChatbotWidget />
             </div>
         </div>
     );
