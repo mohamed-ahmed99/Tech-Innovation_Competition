@@ -24,7 +24,7 @@ export default function Simulation3DPage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [compareMode, setCompareMode] = useState(false);
 
-    const [sliceEnabled, setSliceEnabled] = useState(false);
+    const [sliceEnabled, setSliceEnabled] = useState(true);
     const [sliceAxis, setSliceAxis] = useState('axial');
     const [sliceSlider, setSliceSlider] = useState(0);
 
@@ -262,9 +262,10 @@ export default function Simulation3DPage() {
                     <section className="viewer-card">
                         <div className="viewer-card__head">
                             <div>
-                                <h2>Stylized Anatomical Twin</h2>
+                                <h2>Cinematic Brain Twin</h2>
                                 <p>
-                                    Treatment particles and energy fields in a stylized anatomical model.
+                                    Includes real-time anatomy view, treatment effect overlays, uncertainty halo,
+                                    dose heatmap, and focused lobe labels.
                                 </p>
                             </div>
                             <span className="badge">{compareMode ? 'Comparison Mode' : TREATMENTS[treatment].label}</span>
