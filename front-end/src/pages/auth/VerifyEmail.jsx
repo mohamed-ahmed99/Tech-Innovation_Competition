@@ -84,9 +84,7 @@ export default function VerifyEmail() {
         }
 
         // post data
-        // http://localhost:5150/api/auth/verify-email
-        // https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-email
-        await postData("https://neuro-gaurd-ai-backend.vercel.app/api/auth/verify-email", {}, {
+        await postData("/api/auth/verify-email", {}, {
             email,
             code
         });

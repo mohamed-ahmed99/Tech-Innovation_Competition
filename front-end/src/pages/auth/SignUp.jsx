@@ -70,9 +70,7 @@ function SignUp() {
         }
 
         // post data
-        // http://localhost:5150/api/auth/signup
-        // https://neuro-gaurd-ai-backend.vercel.app/api/auth/signup
-        await postData("https://neuro-gaurd-ai-backend.vercel.app/api/auth/signup", {}, formData);
+        await postData("/api/auth/signup", {}, formData);
     };
 
     useEffect(() => {

@@ -2,8 +2,34 @@ import { status } from '../config/constants.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import Analysis from '../models/analysis.model.js';
 
-// URL of the Python AI service (set via env var, default to localhost for dev)
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+const DEFAULT_DEV_AI_SERVICE_URL = 'http://localhost:8000';
+
+function normalizeBaseUrl(url) {
+    return String(url || '').trim().replace(/\/+$/, '');
+}
+
+function resolveAiServiceUrl() {
+    const configuredUrl =
+        process.env.AI_SERVICE_URL ||
+        process.env.AI_BASE_URL ||
+        process.env.PYTHON_AI_URL;
+
+    if (configuredUrl) {
+        return normalizeBaseUrl(configuredUrl);
+    }
+
+    // Keep localhost fallback for local development only.
+    if (process.env.NODE_ENV !== 'production') {
+        return DEFAULT_DEV_AI_SERVICE_URL;
+    }
+
+    return null;
+}
+
+function getAiRequestTimeoutMs() {
+    const timeout = Number(process.env.AI_REQUEST_TIMEOUT_MS || 45000);
+    return Number.isFinite(timeout) && timeout > 0 ? timeout : 45000;
+}
 
 function buildAdvice(result, modality = 'mri') {
     const detected = Boolean(result?.tumor_detected ?? result?.tumorDetected);
@@ -191,10 +217,22 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
     form.append('threshold', req.body.threshold || '0.50');
     form.append('return_heatmap', 'false');
 
+    const aiServiceUrl = resolveAiServiceUrl();
+    if (!aiServiceUrl) {
+        return res.status(500).json({
+            status: status.ERROR,
+            message: 'AI service is not configured for production. Set AI_SERVICE_URL.',
+        });
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), getAiRequestTimeoutMs());
+
     try {
-        const response = await fetch(`${AI_SERVICE_URL}/api/v1/tumor/analyze`, {
+        const response = await fetch(`${aiServiceUrl}/api/v1/tumor/analyze`, {
             method: 'POST',
             body: form,
+            signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -256,11 +294,20 @@ export const analyzeImage = asyncHandler(async (req, res, next) => {
             },
         });
     } catch (err) {
+        if (err.name === 'AbortError') {
+            return res.status(504).json({
+                status: status.ERROR,
+                message: 'AI service request timed out. Please try again.',
+            });
+        }
+
         console.error('Failed to reach AI service:', err.message);
         return res.status(503).json({
             status: status.ERROR,
             message: 'AI service is unavailable. Please ensure the AI model server is running.',
         });
+    } finally {
+        clearTimeout(timeoutId);
     }
 });
 

@@ -62,9 +62,7 @@ function LogIn() {
         }
 
         // post data using the hook
-        // http://localhost:5150/api/auth/signin
-        // https://neuro-gaurd-ai-backend.vercel.app/api/auth/signin
-        const result = await postData("https://neuro-gaurd-ai-backend.vercel.app/api/auth/signin", {}, formData);
+        const result = await postData("/api/auth/signin", {}, formData);
 
         // Handle redirection for unverified users based on backend "order"
         if (result && result.order === "verifyEmail") {

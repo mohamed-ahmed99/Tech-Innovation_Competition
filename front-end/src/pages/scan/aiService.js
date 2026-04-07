@@ -1,6 +1,10 @@
-// Uses Vercel rewrites to proxy /api/* to the DigitalOcean backend
-// No VITE_API_BASE needed — requests go to the same origin, Vercel proxies them
-const API_BASE = "https://neuro-gaurd-ai-backend.vercel.app";
+// Default to same-origin requests so Vercel rewrites can proxy /api/* in production.
+// For local dev or custom deployments, set VITE_API_BASE (without trailing slash).
+const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
+
+function buildApiUrl(path) {
+    return `${API_BASE}${path}`;
+}
 
 function parseErrorMessageFromResponse(responseBody) {
     if (!responseBody) return null;
@@ -49,7 +53,7 @@ export const sendImageToAI = async (imageFile, modality = "mri", organHint = "")
 
     let response;
     try {
-        response = await fetch(`${API_BASE}/api/ai/analyze`, {
+        response = await fetch(buildApiUrl('/api/ai/analyze'), {
             method: "POST",
             body: formData,
             headers: authHeaders(),
@@ -82,7 +86,7 @@ export const sendImageToAI = async (imageFile, modality = "mri", organHint = "")
  * Returns an array of history items.
  */
 export const getHistory = async () => {
-    const response = await fetch(`${API_BASE}/api/ai/history`, {
+    const response = await fetch(buildApiUrl('/api/ai/history'), {
         headers: authHeaders(),
     });
 
@@ -96,7 +100,7 @@ export const getHistory = async () => {
  * Fetch a single analysis by ID.
  */
 export const getAnalysisById = async (id) => {
-    const response = await fetch(`${API_BASE}/api/ai/history/${id}`, {
+    const response = await fetch(buildApiUrl(`/api/ai/history/${id}`), {
         headers: authHeaders(),
     });
 
@@ -110,7 +114,7 @@ export const getAnalysisById = async (id) => {
  * Delete a specific history entry.
  */
 export const deleteHistoryItem = async (id) => {
-    const response = await fetch(`${API_BASE}/api/ai/history/${id}`, {
+    const response = await fetch(buildApiUrl(`/api/ai/history/${id}`), {
         method: "DELETE",
         headers: authHeaders(),
     });
