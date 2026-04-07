@@ -1,54 +1,59 @@
+import {
+    DIGITAL_TWIN_GENDERS,
+    DIGITAL_TWIN_GRADES,
+    DIGITAL_TWIN_LOCATIONS,
+    DIGITAL_TWIN_PREVIOUS_TREATMENTS,
+    DIGITAL_TWIN_SYMPTOMS,
+} from './contract.js';
+
 /**
- * Simple validation for Digital Twin patient data
- * @param {Object} data - The form data object
- * @returns {Object} - An object containing errors, if any
+ * Contract-aligned validation for Digital Twin payload.
  */
 export const validateDigitalTwinData = (data) => {
     const errors = {};
 
-    // Age validation
-    if (!data.age) {
-        errors.age = "Age is required";
-    } else if (data.age <= 0) {
-        errors.age = "age must be positive Number";
+    const age = Number.parseInt(data.age, 10);
+    if (!Number.isInteger(age) || age < 1 || age > 120) {
+        errors.age = 'Age must be an integer between 1 and 120';
     }
 
-    // Gender validation
-    if (!data.gender) {
-        errors.gender = "Gender is required";
+    if (!DIGITAL_TWIN_GENDERS.includes(data.gender)) {
+        errors.gender = `Gender must be one of: ${DIGITAL_TWIN_GENDERS.join(', ')}`;
     }
 
-    // Tumor Size validation
-    if (!data.tumor_size_cm) {
-        errors.tumor_size_cm = "Tumor size is required";
-    } else if (isNaN(data.tumor_size_cm) || Number(data.tumor_size_cm) <= 0) {
-        errors.tumor_size_cm = "Tumor size must be a positive number";
+    const tumorSize = Number.parseFloat(data.tumor_size_cm);
+    if (!Number.isFinite(tumorSize) || tumorSize <= 0 || tumorSize > 20) {
+        errors.tumor_size_cm = 'Tumor size must be greater than 0 and at most 20 cm';
     }
 
-    // Tumor Location validation
-    if (!data.tumor_location) {
-        errors.tumor_location = "Tumor location is required";
+    if (!DIGITAL_TWIN_LOCATIONS.includes(data.tumor_location)) {
+        errors.tumor_location = `Tumor location must be one of: ${DIGITAL_TWIN_LOCATIONS.join(', ')}`;
     }
 
-    // Tumor Grade validation
-    if (!data.tumor_grade) {
-        errors.tumor_grade = "Tumor grade is required";
+    if (!DIGITAL_TWIN_GRADES.includes(data.tumor_grade)) {
+        errors.tumor_grade = `Tumor grade must be one of: ${DIGITAL_TWIN_GRADES.join(', ')}`;
     }
 
-    // Previous Treatment validation
-    if (!data.previous_treatment) {
-        errors.previous_treatment = "Previous treatment info is required";
+    if (!DIGITAL_TWIN_PREVIOUS_TREATMENTS.includes(data.previous_treatment)) {
+        errors.previous_treatment = `Previous treatment must be one of: ${DIGITAL_TWIN_PREVIOUS_TREATMENTS.join(', ')}`;
     }
 
-    // Performance Status validation
-    if (data.performance_status === undefined || data.performance_status === "") {
-        errors.performance_status = "Performance status is required";
+    const performance = Number.parseInt(data.performance_status, 10);
+    if (!Number.isInteger(performance) || performance < 0 || performance > 4) {
+        errors.performance_status = 'Performance status must be an integer between 0 and 4';
     }
 
-
+    if (!Array.isArray(data.symptoms)) {
+        errors.symptoms = 'Symptoms must be provided as a list';
+    } else {
+        const invalid = data.symptoms.filter((item) => !DIGITAL_TWIN_SYMPTOMS.includes(item));
+        if (invalid.length > 0) {
+            errors.symptoms = `Symptoms must be selected from: ${DIGITAL_TWIN_SYMPTOMS.join(', ')}`;
+        }
+    }
 
     return {
         isValid: Object.keys(errors).length === 0,
-        errors
+        errors,
     };
 };

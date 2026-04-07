@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 
 import BrainTwinScene from './BrainTwinScene';
 import {
@@ -15,10 +16,38 @@ import './simulation3d.css';
 
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
+function parseSimulationSeed(searchParams) {
+    const treatmentParam = searchParams.get('treatment');
+    const tumorLocationParam = searchParams.get('tumorLocation');
+    const intensityParam = Number(searchParams.get('intensity'));
+    const confidenceParam = Number(searchParams.get('confidence'));
+    const source = searchParams.get('source') || '';
+
+    const treatment = Object.prototype.hasOwnProperty.call(TREATMENTS, treatmentParam)
+        ? treatmentParam
+        : 'surgery';
+    const tumorLocation = TUMOR_LOCATIONS.includes(tumorLocationParam)
+        ? tumorLocationParam
+        : 'temporal';
+    const intensity = Number.isFinite(intensityParam) ? clamp(Math.round(intensityParam), 20, 100) : 68;
+    const confidence = Number.isFinite(confidenceParam) ? clamp(Math.round(confidenceParam), 0, 100) : null;
+
+    return {
+        source,
+        treatment,
+        tumorLocation,
+        intensity,
+        confidence,
+    };
+}
+
 export default function Simulation3DPage() {
-    const [treatment, setTreatment] = useState('surgery');
-    const [intensity, setIntensity] = useState(68);
-    const [tumorLocation, setTumorLocation] = useState('temporal');
+    const [searchParams] = useSearchParams();
+    const simulationSeed = useMemo(() => parseSimulationSeed(searchParams), [searchParams]);
+
+    const [treatment, setTreatment] = useState(simulationSeed.treatment);
+    const [intensity, setIntensity] = useState(simulationSeed.intensity);
+    const [tumorLocation, setTumorLocation] = useState(simulationSeed.tumorLocation);
     const [laterality, setLaterality] = useState('right');
     const [progress, setProgress] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -31,6 +60,7 @@ export default function Simulation3DPage() {
     const simulations = useMemo(() => getAllSimulations(intensity), [intensity]);
     const ranked = useMemo(() => rankTreatments(simulations), [simulations]);
     const confidence = useMemo(() => computeConfidence(simulations), [simulations]);
+    const seededFromDigitalTwin = simulationSeed.source === 'digital-twin';
 
     const recommended = ranked[0]?.key || 'surgery';
     const selectedMetrics = simulations[treatment] || simulations.surgery;
@@ -80,6 +110,11 @@ export default function Simulation3DPage() {
                         Explore estimated tumor response in a real-time 3D brain scene with treatment effects,
                         cut planes, uncertainty halo, and dose visualization.
                     </p>
+                    {seededFromDigitalTwin && (
+                        <p className="simulation-header__intro" style={{ marginTop: 6 }}>
+                            Seeded from Digital Twin recommendation{simulationSeed.confidence !== null ? ` (${simulationSeed.confidence}% model confidence)` : ''}.
+                        </p>
+                    )}
                 </header>
 
                 <div className="simulation-layout">

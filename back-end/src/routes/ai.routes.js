@@ -3,7 +3,13 @@ import multer from 'multer';
 import { analyzeImage, getHistory, getAnalysisById, deleteAnalysis } from '../controllers/ai.controller.js';
 import { checkUser } from '../middlewares/checkUser.js';
 
-import { createDigitalTwin } from '../controllers/digitalTwin.controllers.js';
+import {
+    createDigitalTwin,
+    getDigitalTwinContract,
+    getDigitalTwinHealth,
+    getDigitalTwinHistory,
+    getDigitalTwinRunById,
+} from '../controllers/digitalTwin.controllers.js';
 
 const router = express.Router();
 
@@ -25,11 +31,14 @@ router.get('/history/:id', checkUser(), getAnalysisById);
 // DELETE /api/ai/history/:id    — delete a specific analysis (auth required)
 router.delete('/history/:id', checkUser(), deleteAnalysis);
 
-
-
-
-// POST /api/ai/digital-twin — create a digital twin (auth required)
-router.post('/digital-twin', createDigitalTwin);
+// Digital Twin endpoints
+router.get('/digital-twin/health', getDigitalTwinHealth);
+router.get('/digital-twin/contract', getDigitalTwinContract);
+router.post('/digital-twin/recommend', tryAttachUser, createDigitalTwin);
+// Backward-compatible alias
+router.post('/digital-twin', tryAttachUser, createDigitalTwin);
+router.get('/digital-twin/history', checkUser(), getDigitalTwinHistory);
+router.get('/digital-twin/history/:id', checkUser(), getDigitalTwinRunById);
 
 
 

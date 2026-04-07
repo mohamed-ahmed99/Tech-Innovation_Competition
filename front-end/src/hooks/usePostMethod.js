@@ -14,7 +14,7 @@ export const usePostMethod = () => {
     const postData = async (url, options = {}, body) => {
 
         // check body
-        if (!body) return null
+        if (!body) return null;
 
         // reset state for new request
         setStatus("idle");
@@ -22,22 +22,37 @@ export const usePostMethod = () => {
         setData(null);
 
         // get token
-        const token = localStorage.getItem("myToken");
+        const token = localStorage.getItem("NeuroAi_Token");
         setLoading(true); // set loading
+
+        const isFormData = body instanceof FormData;
+        const headers = {
+            ...options.headers,
+        };
+
+        if (!isFormData && !headers["Content-Type"] && !headers["content-type"]) {
+            headers["Content-Type"] = "application/json";
+        }
+
+        if (token) {
+            headers.authorization = `Bearer ${token}`;
+        }
 
         try {
             // fetch 
             const response = await fetch(url, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...options.headers,
-                    "authorization": `Bearer ${token}`
-                },
+                headers,
                 credentials: "include",
-                body: JSON.stringify(body)
+                body: isFormData ? body : JSON.stringify(body)
             });
-            const result = await response.json(); // get result
+
+            let result = null;
+            try {
+                result = await response.json();
+            } catch {
+                result = { message: `Request completed with HTTP ${response.status}.` };
+            }
 
             // check response
             if (!response.ok) {
@@ -50,6 +65,8 @@ export const usePostMethod = () => {
                 setMessage(result.message || "Data fetched successfully.");
             }
 
+            return result;
+
         }
         // catch error
         catch (error) {
@@ -57,6 +74,7 @@ export const usePostMethod = () => {
             setStatus("fail");
             setData(null);
             setMessage(error.message);
+            return null;
         } finally {
             setLoading(false); // finish loading
         }
