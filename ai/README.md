@@ -127,13 +127,105 @@ from api_adapter import router as tumor_router
 app.include_router(tumor_router, prefix="/api/v1/tumor")
 ```
 
-Set the environment variable:
+Set environment variables for model checkpoints:
 ```bash
-export TUMOR_CHECKPOINT=/path/to/best_model.pth
+export TUMOR_CHECKPOINT_BRAIN=/path/to/brain_best_model.pth
+export TUMOR_CHECKPOINT_LIVER=/path/to/liver_best_model.pth
+export TUMOR_CHECKPOINT_BREAST=/path/to/breast_best_model.pth
 export TUMOR_MODALITY=mri
 ```
 
 Then POST to `/api/v1/tumor/analyze` with a multipart file upload.
+
+For Docker Compose production, map checkpoints like this:
+```yaml
+environment:
+  - TUMOR_CHECKPOINT_BRAIN=/app/checkpoints/brain_best_model.pth
+  - TUMOR_CHECKPOINT_LIVER=/app/checkpoints/liver_best_model.pth
+  - TUMOR_CHECKPOINT_BREAST=/app/checkpoints/breast_best_model.pth
+volumes:
+  - ./ai/checkpoints:/app/checkpoints
+```
+
+### 6. Train a breast model checkpoint
+
+Use breast/mammography-style datasets with X-ray preprocessing and save output directly as `breast_best_model.pth`:
+
+```bash
+python train.py \
+  --organ breast \
+  --data_dir /path/to/breast_dataset \
+  --modality xray \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name breast_best_model.pth \
+  --last_checkpoint_name breast_last_model.pth
+```
+
+If your breast dataset follows the common MRI folder layout with `train/Healthy`, `train/Sick`,
+`validation/Healthy`, and `validation/Sick`, prepare it first with:
+
+```bash
+python prepare_breast_dataset.py \
+  --source_dir "/path/to/Breast Cancer Patients MRI's" \
+  --output_dir /path/to/breast_prepared
+```
+
+Then train with MRI preprocessing:
+
+```bash
+python train.py \
+  --organ breast \
+  --data_dir /path/to/breast_prepared \
+  --modality mri \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name breast_best_model.pth \
+  --last_checkpoint_name breast_last_model.pth
+```
+
+### 7. Placeholder training setup for upcoming organs
+
+The training CLI is already prepared for `lung`, `kidney`, and `prostate` artifact naming.
+These are currently **training placeholders only** (frontend-visible), and are not yet wired for production routing/inference.
+
+```bash
+python train.py \
+  --organ lung \
+  --data_dir /path/to/lung_dataset \
+  --modality ct \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name lung_best_model.pth \
+  --last_checkpoint_name lung_last_model.pth
+```
+
+```bash
+python train.py \
+  --organ kidney \
+  --data_dir /path/to/kidney_dataset \
+  --modality ct \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name kidney_best_model.pth \
+  --last_checkpoint_name kidney_last_model.pth
+```
+
+```bash
+python train.py \
+  --organ prostate \
+  --data_dir /path/to/prostate_dataset \
+  --modality mri \
+  --architecture efficientnet \
+  --no_masks \
+  --checkpoint_dir checkpoints \
+  --best_checkpoint_name prostate_best_model.pth \
+  --last_checkpoint_name prostate_last_model.pth
+```
 
 ---
 

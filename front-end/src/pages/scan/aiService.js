@@ -1,6 +1,6 @@
 // Uses Vercel rewrites to proxy /api/* to the DigitalOcean backend
 // No VITE_API_BASE needed — requests go to the same origin, Vercel proxies them
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+const API_BASE = "https://neuro-gaurd-ai-backend.vercel.app";
 
 function parseErrorMessageFromResponse(responseBody) {
     if (!responseBody) return null;
@@ -39,12 +39,15 @@ function authHeaders() {
  * Send an image to the AI model for analysis.
  * Returns { analysis: string, structured: object }
  */
-export const sendImageToAI = async (imageFile, modality = "mri", organHint = "") => {
+export const sendImageToAI = async (imageFile, modality = "mri", organHint = "", digitalTwinProfile = null) => {
     const formData = new FormData();
     formData.append("image", imageFile);
     formData.append("modality", modality);
     if (organHint) {
         formData.append("organ_hint", organHint);
+    }
+    if (digitalTwinProfile) {
+        formData.append("digital_twin", JSON.stringify(digitalTwinProfile));
     }
 
     let response;

@@ -3,7 +3,7 @@ import { Sparkles, RefreshCw, Copy, CheckCircle2, Download, Printer } from 'luci
 import { motion, AnimatePresence } from 'framer-motion';
 import { jsPDF } from 'jspdf';
 
-const AnalysisResult = ({ result, structured, onReset }) => {
+const AnalysisResult = ({ result, structured, onReset, onVisualize3D, digitalTwinProfile }) => {
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
@@ -13,8 +13,8 @@ const AnalysisResult = ({ result, structured, onReset }) => {
         let i = 0;
         setDisplayedText('');
         setIsTyping(true);
-        
-        const baseSpeed = 20; 
+
+        const baseSpeed = 20;
         const speed = result.length > 500 ? 10 : baseSpeed;
 
         const typingInterval = setInterval(() => {
@@ -29,7 +29,7 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                 setIsTyping(false);
             }
         }, speed);
-        
+
         return () => clearInterval(typingInterval);
     }, [result]);
 
@@ -107,6 +107,20 @@ const AnalysisResult = ({ result, structured, onReset }) => {
         structured?.treatmentOptions ||
         structured?.advice?.treatmentOptions ||
         [];
+
+    const treatmentComparison =
+        structured?.treatment_comparison ||
+        structured?.treatmentComparison ||
+        structured?.advice?.treatmentComparison ||
+        [];
+
+    const suggestedTreatment =
+        structured?.suggested_treatment ||
+        structured?.suggestedTreatment ||
+        structured?.advice?.suggestedTreatment ||
+        treatmentComparison?.[0]?.name ||
+        treatmentOptions?.[0] ||
+        'Not available';
 
     const expectedOutlook =
         structured?.expected_outlook ||
@@ -222,14 +236,14 @@ const AnalysisResult = ({ result, structured, onReset }) => {
     };
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             className="w-full max-w-3xl mx-auto mt-4"
         >
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-lg flex flex-col">
-                
+
                 {/* Header */}
                 <div className="bg-zinc-950/50 px-5 py-4 border-b border-zinc-800 flex items-center justify-between">
                     <div className="flex items-center gap-3 text-zinc-100">
@@ -238,7 +252,7 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                     </div>
 
                     {!isTyping && (
-                        <button 
+                        <button
                             onClick={handleCopy}
                             className={`p-1.5 rounded-md transition-colors flex items-center gap-2 text-xs font-medium ${isCopied ? 'bg-zinc-800 text-green-400' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'}`}
                         >
@@ -247,9 +261,9 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                         </button>
                     )}
                 </div>
-                
+
                 {/* Content */}
-                <div 
+                <div
                     ref={containerRef}
                     className="p-5 sm:p-6"
                 >
@@ -314,6 +328,30 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                         </div>
 
                         <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 sm:col-span-2">
+                            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Digital Twin Personalized Suggestion</p>
+                            <p className="text-sm text-zinc-100 font-semibold leading-relaxed">{suggestedTreatment}</p>
+                            {digitalTwinProfile && (
+                                <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                                    Based on twin profile: age {digitalTwinProfile.age}, grade {digitalTwinProfile.tumor_grade}, previous treatment {digitalTwinProfile.previous_treatment}.
+                                </p>
+                            )}
+
+                            {treatmentComparison.length > 0 && (
+                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    {treatmentComparison.slice(0, 3).map((option, idx) => (
+                                        <div key={`compare-option-${idx}`} className="rounded-lg border border-zinc-700 bg-zinc-900/40 p-3">
+                                            <p className="text-[11px] uppercase tracking-wide text-zinc-500">Option {idx + 1}</p>
+                                            <p className="text-sm text-zinc-100 mt-1">{option?.name || option}</p>
+                                            {typeof option?.suitabilityScore === 'number' && (
+                                                <p className="text-xs text-zinc-400 mt-1">Fit score: {option.suitabilityScore}%</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-4 sm:col-span-2">
                             <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Expected Outlook</p>
                             <p className="text-sm text-zinc-200 leading-relaxed">{expectedOutlook}</p>
                         </div>
@@ -332,7 +370,7 @@ const AnalysisResult = ({ result, structured, onReset }) => {
 
                     <p className="mt-4 text-xs text-zinc-500 leading-relaxed">{disclaimer}</p>
                 </div>
-                
+
                 {/* Footer Actions */}
                 <AnimatePresence>
                     {!isTyping && (
@@ -357,6 +395,17 @@ const AnalysisResult = ({ result, structured, onReset }) => {
                                     <span>Download PDF</span>
                                 </button>
                             </div>
+                            {onVisualize3D && (
+                                <div className="grid grid-cols-1 gap-2 mb-2">
+                                    <button
+                                        onClick={onVisualize3D}
+                                        className="w-full py-2.5 px-4 bg-zinc-100 hover:bg-white text-zinc-950 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-zinc-100/80"
+                                    >
+                                        <span>Visualize Treatment In 3D</span>
+                                    </button>
+                                    <p className="text-[11px] text-zinc-500 text-center">Do you want to try the treatment on 3D and compare the top 3 plans?</p>
+                                </div>
+                            )}
                             <div className="grid grid-cols-1 gap-2 mb-2">
                                 <button
                                     onClick={handlePrintReport}

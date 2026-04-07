@@ -9,7 +9,7 @@ const analysisSchema = new mongoose.Schema({
     },
     title: {
         type: String,
-        default: 'Brain Scan Analysis',
+        default: 'Medical Scan Analysis',
     },
     // Structured result from the AI model
     tumorDetected: { type: Boolean, required: true },
@@ -28,6 +28,18 @@ const analysisSchema = new mongoose.Schema({
     // Human-readable formatted report
     formattedReport: { type: String, required: true },
     modality:        { type: String, default: 'mri' },
+    bodyRegion:      { type: String, default: 'brain' },
+    detectedOrgan:   { type: String, default: 'brain' },
+    organDetectionConfidence: { type: Number, default: 0 },
+    organDetectionSource:     { type: String, default: 'unknown' },
+    organDetectionWarning:    { type: String, default: '' },
+    urgencyLevel:    { type: String, default: 'routine' },
+    nextSteps:       { type: [String], default: [] },
+    explanation:     { type: String, default: '' },
+    treatmentOptions:{ type: [String], default: [] },
+    expectedOutlook: { type: String, default: '' },
+    redFlags:        { type: [String], default: [] },
+    disclaimer:      { type: String, default: '' },
 }, {
     timestamps: true,
 });

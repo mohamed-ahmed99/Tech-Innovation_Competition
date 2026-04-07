@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, LogIn, Info, Menu, X, PanelLeft } from 'lucide-react';
-import { useGlobalData } from '../hooks/useGlobalData';
+import { LogOut, LogIn, Info, Menu, X, PanelLeft, Cpu, Scan } from 'lucide-react';
+import { useGlobalData } from '../../hooks/useGlobalData';
+
+
+// navbar
 import MobileMenu from './MobileMenu';
 
 
@@ -23,11 +26,18 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
+    const navLinks = location.pathname === '/' ? [] : [
+        { to: "/digital-twin", label: "Digital Twin", icon: <Cpu size={16} /> },
+        { to: "/scan", label: "Scan", icon: <Scan size={16} /> },
+        { to: "/simulation-3d", label: "3D Lab", icon: <Cpu size={16} /> },
+        { to: "/about-us", label: "About Us", icon: <Info size={16} /> },
+    ];
+
     return (
         <nav className="w-full h-[70px] px-6 md:px-12 flex items-center justify-between bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900 sticky top-0 z-50">
             {/* Left side: Logo & Sidebar toggle on mobile */}
             <div className="flex items-center gap-3">
-                {isUserAuthenticated && (location.pathname === '/scan' || location.pathname === '/model') ? (
+                {isUserAuthenticated && location.pathname != "/about-us" ? (
                     <button
                         onClick={onToggleSidebar}
                         className="sm:hidden p-2 -ml-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 rounded-xl transition-all"
@@ -52,34 +62,22 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
                 </Link>
             </div>
 
+
             {/* Desktop: Right side */}
             <div className="flex items-center gap-6 md:gap-8">
-                <Link
-                    to="/digital-twin"
-                    className="hidden sm:flex items-center gap-2 text-sm text-zinc-300 hover:text-zinc-100 transition-colors font-semibold"
-                >
-                    Try Our Model
-                </Link>
 
-                <Link
-                    to="/about-us"
-                    className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"
-                >
-                    <Info size={16} />
-                    About Us
-                </Link>
-
-                {isUserAuthenticated ? (
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={handleLogout}
-                        className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm font-semibold transition-all hover:bg-zinc-800 hover:text-zinc-100 hover:border-zinc-700 shadow-sm"
+                {navLinks.map((link) => (
+                    <Link
+                        key={link.to}
+                        to={link.to}
+                        className="hidden sm:flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-100 transition-colors font-medium"
                     >
-                        <LogOut size={16} />
-                        Logout
-                    </motion.button>
-                ) : (
+                        {link.icon}
+                        {link.label}
+                    </Link>
+                ))}
+
+                {isUserAuthenticated ? null : (
                     <Link
                         to="/auth/login"
                         className="hidden sm:flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-sm font-bold transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95"
@@ -100,6 +98,7 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
 
             {/* Mobile Menu Component (Refined & Smaller) */}
             <MobileMenu
+                navLinks={navLinks}
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
                 isUserAuthenticated={isUserAuthenticated}

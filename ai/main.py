@@ -9,7 +9,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api_adapter import router as tumor_router
-from digital_twin.router import router as digital_twin_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(name)s  %(message)s")
 
@@ -29,7 +28,6 @@ app.add_middleware(
 )
 
 app.include_router(tumor_router, prefix="/api/v1/tumor")
-app.include_router(digital_twin_router, prefix="/api/v1/digital-twin")
 
 
 @app.get("/")

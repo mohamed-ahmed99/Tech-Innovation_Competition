@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, LogIn, Info, Cpu } from 'lucide-react';
+import { LogOut, LogIn, Info } from 'lucide-react';
 
 export default function MobileMenu({ isOpen, onClose, isUserAuthenticated, onLogout }) {
     return (
@@ -15,12 +15,11 @@ export default function MobileMenu({ isOpen, onClose, isUserAuthenticated, onLog
                 >
                     <div className="flex flex-col gap-4">
                         <Link
-                            to="/simulation-3d"
+                            to="/digital-twin"
                             onClick={onClose}
                             className="flex items-center gap-3 text-lg font-medium text-zinc-200 p-3 hover:bg-zinc-900 rounded-xl transition-colors"
                         >
-                            <Cpu size={20} className="text-zinc-500" />
-                            3D Lab
+                            Try Our Model
                         </Link>
 
                         <Link

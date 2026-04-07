@@ -4,6 +4,7 @@ import { useGlobalData } from '../hooks/useGlobalData';
 import Navbar from './Navbar';
 import Sidebar from '../pages/home/Sidebar';
 import { useLocation } from 'react-router-dom';
+import ChatbotWidget from './ChatbotWidget';
 
 export default function MainLayout() {
     const [user] = useGlobalData('user');
@@ -33,7 +34,7 @@ export default function MainLayout() {
 
             {/* Main Content */}
             <div className="flex flex-1 overflow-hidden relative">
-                {user && location.pathname === '/' && (
+                {(user && (location.pathname === '/scan' || location.pathname === '/model')) && (
                     <Sidebar
                         isMobileOpen={isSidebarOpen}
                         onClose={() => setIsSidebarOpen(false)}
@@ -46,6 +47,8 @@ export default function MainLayout() {
                 <main className="flex-1 overflow-y-auto relative bg-zinc-950">
                     <Outlet />
                 </main>
+
+                <ChatbotWidget />
             </div>
         </div>
     );
