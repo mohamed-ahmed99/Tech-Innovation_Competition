@@ -3,7 +3,7 @@
 const API_BASE_DEV = "http://localhost:5150";
 const API_BASE_PROD = "https://neuro-gaurd-ai-backend.vercel.app";
 
-const API_BASE = window.location.hostname === 'localhost' ? API_BASE_DEV : API_BASE_PROD;
+const API_BASE =  API_BASE_PROD;
 
 function buildApiUrl(path) {
     return `${API_BASE}${path}`;
