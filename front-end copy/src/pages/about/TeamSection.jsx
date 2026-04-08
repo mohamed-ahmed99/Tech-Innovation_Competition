@@ -1,0 +1,174 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Github, Linkedin, Mail, Facebook } from 'lucide-react';
+
+const TeamSection = () => {
+    const team = [
+        // Engy Kaoud
+        {
+            name: "Engy Kaoud",
+            role: "Researcher",
+            image: "./team_photos/Injy.jpg",
+            socials: [
+                {
+                    name: "email",
+                    icon: <Mail size={18} strokeWidth={1.5} />,
+                    url: "angykaoud@gmail.com"
+                },
+                {
+                    name: "Facebook",
+                    icon: <Facebook size={18} strokeWidth={1.5} />,
+                    url: "https://www.facebook.com/profile.php?id=61575308375504"
+                }
+            ],
+            description: "Leader and researcher passionate about science and technology, working on developing innovative ideas and transforming them into real-world solutions through research and teamwork, while leading teams to create real impact."
+        },
+
+
+        // Youssef Mohamed
+        {
+            name: "Youssef Mohamed",
+            role: "AI Developer",
+            image: "",
+            socials: [
+                {
+                    name: "Github",
+                    icon: <Github size={18} strokeWidth={1.5} />,
+                    url: "https://github.com/YusufMohamed-tech"
+                }
+            ],
+            description: ""
+        },
+        {
+            name: "Mohamed Ahmed",
+            role: "Full-Stack Web Developer",
+            image: "./team_photos/Mohamed.jpg",
+            socials: [
+                {
+                    name: "Github",
+                    icon: <Github size={18} strokeWidth={1.5} />,
+                    url: "https://github.com/mohamed-ahmed99"
+                },
+                {
+                    name: "Facebook",
+                    icon: <Facebook size={18} strokeWidth={1.5} />,
+                    url: "https://www.facebook.com/mohamed.ahmed.459624/"
+                }
+            ],
+            description: "A student passionate about programming and scientific research, specializing in web development and problem-solving, always striving to transform ideas into innovative technological solutions."
+        },
+
+        {
+            name: "Reda",
+            role: "Full-Stack Web Developer",
+            image: "./team_photos/Reda.jpg",
+            socials: [
+                {
+                    name: "Github",
+                    icon: <Github size={18} strokeWidth={1.5} />,
+                    url: "https://github.com/reda445566"
+                }
+            ],
+            description: ""
+        },
+        {
+            name: "Jana Mohamed",
+            role: "Mobile Application Developer",
+            image: "./team_photos/Jana.jpg",
+            socials: [
+                {
+                    name: "linkedin",
+                    icon: <Linkedin size={18} strokeWidth={1.5} />,
+                    url: "https://www.linkedin.com/in/jana-mohamed-832199373?utm_source=share_via&utm_content=profile&utm_medium=member_android"
+                },
+                {
+                    name: "Facebook",
+                    icon: <Facebook size={18} strokeWidth={1.5} />,
+                    url: "https://www.facebook.com/share/1BSU9nBmtU/"
+                }
+            ],
+            description: ""
+        },
+    ];
+
+    return (
+        <section className="py-20 px-6 md:px-12 bg-[var(--bg-primary)] text-[var(--text-primary)]">
+            <div className="max-w-7xl mx-auto">
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-3 mb-16"
+                >
+                    <span className="w-8 h-px bg-[var(--accent-primary)]"></span>
+                    <span className="section-label">OUR TEAM</span>
+                </motion.div>
+
+                <div className="responsive-grid">
+                    {team.map((member, idx) => (
+                        <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="card-redesign h-full flex flex-col group"
+                        >
+                            {/* Image - Top */}
+                            <div className="relative aspect-square overflow-hidden team-avatar mb-6 bg-[var(--bg-elevated)] flex items-center justify-center transition-all duration-500 group-hover:scale-[1.02]">
+                                {member.image ? (
+                                    <img
+                                        src={member.image}
+                                        alt={member.name}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    />
+                                ) : (
+                                    <span className="text-5xl font-bold text-[var(--accent-primary)] opacity-40">
+                                        {member.name.charAt(0)}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Info - Below Image */}
+                            <div className="flex flex-col flex-1">
+                                <div className="mb-4">
+                                    <h3 className="team-name mb-1">
+                                        {member.name}
+                                    </h3>
+                                    <p className="team-role">
+                                        {member.role}
+                                    </p>
+                                </div>
+
+                                {/* Social Icons */}
+                                <div className="flex gap-4 mb-6">
+                                    {member.socials.map((social, sIdx) => (
+                                        <a
+                                            key={sIdx}
+                                            href={social.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="social-icon"
+                                            title={social.name}
+                                        >
+                                            {social.icon}
+                                        </a>
+                                    ))}
+                                </div>
+
+                                {/* Description */}
+                                <p className="team-bio line-clamp-4">
+                                    {member.description}
+                                </p>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+
+
+export default TeamSection;
