@@ -29,7 +29,7 @@ const TeamSection = () => {
         {
             name: "Youssef Mohamed",
             role: "AI Developer",
-            image: "",
+            image: "./team_photos/Yussef.jpg",
             socials: [
                 {
                     name: "Github",
@@ -37,7 +37,7 @@ const TeamSection = () => {
                     url: "https://github.com/YusufMohamed-tech"
                 }
             ],
-            description: ""
+            description: "A high school student interested in AI and programming, passionate about learning new things in the world of technology."
         },
         {
             name: "Mohamed Ahmed",
@@ -55,7 +55,7 @@ const TeamSection = () => {
                     url: "https://www.facebook.com/mohamed.ahmed.459624/"
                 }
             ],
-            description: "A student passionate about programming and scientific research, specializing in web development and problem-solving, always striving to transform ideas into innovative technological solutions."
+            description: "A high school student passionate about programming and scientific research, specializing in web development and problem-solving, always striving to transform ideas into innovative technological solutions."
         },
 
         {
@@ -69,7 +69,7 @@ const TeamSection = () => {
                     url: "https://github.com/reda445566"
                 }
             ],
-            description: ""
+            description: "A high school student passionate about web development, focused on back-end, and enjoys participating in volunteer work."
         },
         {
             name: "Jana Mohamed",
@@ -87,7 +87,7 @@ const TeamSection = () => {
                     url: "https://www.facebook.com/share/1BSU9nBmtU/"
                 }
             ],
-            description: ""
+            description: "A high school girl interested in mobile app development, passionate about volunteering and helping students."
         },
     ];
 
