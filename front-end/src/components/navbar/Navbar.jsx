@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, LogIn, Info, Menu, X, PanelLeft, Cpu, Scan } from 'lucide-react';
+import { LogOut, LogIn, Info, Menu, X, PanelLeft } from 'lucide-react';
 import { useGlobalData } from '../../hooks/useGlobalData';
 
 
@@ -26,10 +26,7 @@ export default function Navbar({ isUserAuthenticated, onToggleSidebar }) {
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-    const navLinks = location.pathname === '/' ? [] : [
-        { to: "/digital-twin", label: "Digital Twin", icon: <Cpu size={16} /> },
-        { to: "/scan", label: "Scan", icon: <Scan size={16} /> },
-        { to: "/simulation-3d", label: "3D Lab", icon: <Cpu size={16} /> },
+    const navLinks = location.pathname === '/scan' ? [] : [
         { to: "/about-us", label: "About Us", icon: <Info size={16} /> },
     ];
 

@@ -2,8 +2,6 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   Scan, 
-  Box, 
-  UserCircle2, 
   Info, 
   ArrowUpRight
 } from 'lucide-react';
@@ -18,24 +16,6 @@ const features = [
     color: 'from-blue-600/20 to-cyan-600/20',
     borderColor: 'group-hover:border-blue-500/50',
     iconColor: 'text-blue-400'
-  },
-  {
-    title: 'Simulation',
-    description: '3D neurological data visualization.',
-    icon: Box,
-    path: '/simulation-3d',
-    color: 'from-purple-600/20 to-fuchsia-600/20',
-    borderColor: 'group-hover:border-purple-500/50',
-    iconColor: 'text-purple-400'
-  },
-  {
-    title: 'Digital Twin',
-    description: 'Virtual health modeling dashboard.',
-    icon: UserCircle2,
-    path: '/digital-twin',
-    color: 'from-emerald-600/20 to-teal-600/20',
-    borderColor: 'group-hover:border-emerald-500/50',
-    iconColor: 'text-emerald-400'
   },
   {
     title: 'About',
@@ -104,7 +84,7 @@ export default function HomePage() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className='grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 w-full max-w-6xl relative z-10'
+        className='grid grid-cols-2 gap-3 md:gap-6 w-full max-w-xl relative z-10'
       >
         {features.map((feature, index) => (
           <Link to={feature.path} key={index} className="group h-full">
